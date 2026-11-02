@@ -51,7 +51,15 @@ sealed class ToastWindow : Window
             Foreground = Bubble.Ink,
             Margin = new Thickness(14, 7, 14, 8),
         };
-        Content = new BubbleCard { Child = text, Margin = new Thickness(0, 0, 2, 3) };
+        // Centered, since Windows makes even a borderless window at least about 136 pixels wide, which would stretch a
+        // short message's card
+        Content = new BubbleCard
+        {
+            Child = text,
+            Margin = new Thickness(0, 0, 2, 3),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         SourceInitialized += (_, _) =>
         {
             var handle = new WindowInteropHelper(this).Handle;

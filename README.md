@@ -8,12 +8,16 @@
 
 <p align="center">Windows 10 or 11 · 64-bit · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/latest/download/JaredsWindowsUtils.exe">Portable version</a> · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases">All versions</a></p>
 
-<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, and About, Check for Updates and Quit buttons"></p>
+<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, a switch for snipping the screen with Win+Alt+P, and About, Check for Updates and Quit buttons"></p>
 
 <table>
   <tr>
     <td width="50%"><b><a href="#window-snapping">Window snapping</a></b><br>Win+Alt and an arrow key put the window you're in into halves, thirds, quarters or sixths.</td>
-    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: the screenshot tool is next.</td>
+    <td width="50%"><b><a href="#screenshot-tool">Screenshot tool</a></b><br>Win+Alt+P snips part of the screen to copy, save or mark up, or copies the text in it.</td>
+  </tr>
+  <tr>
+    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: staying awake with the lid closed is next.</td>
+    <td width="50%"></td>
   </tr>
 </table>
 
@@ -53,6 +57,36 @@ Each display has two columns, or three on external displays with **Thirds on Ext
 Windows' own snapping, with the Windows key and the arrow keys or by dragging a window to an edge, keeps working too. Windows 11's Win+Alt+Up and Win+Alt+Down, for the top and bottom halves, give way to the app's while snapping is on.
 
 **Why Win+Alt:** the Mac app uses control+option, but on Windows, Ctrl+Alt types accented letters on many keyboards, and VS Code, JetBrains IDEs and Magnifier use Ctrl+Alt+arrow keys. Apps leave the Windows key alone.
+
+---
+
+## Screenshot tool
+
+Press Win+Alt+P to snip part of the screen, then copy it, save it, mark it up with boxes, lines, arrows, highlights, blurs and text, or copy the text in it.
+
+**Turn it on:** it's on from the start. Its switch is **Snip the Screen with Win+Alt+P**, under **Screenshots** in the menu.
+
+**Use it:** press Win+Alt+P and drag across part of the screen. Press Space to pick a whole window instead and click it, or press Esc to cancel. A menu opens where you let go, with **Copy to Clipboard**, **Copy Text**, **Open in Editor** and **Save…**. Click one, or use the arrow keys and Enter. Esc, or a click anywhere else, throws the snip away.
+
+**Copy Text** copies the words in the snip as plain text, line by line, even where you can't select them, like an error message, a paused video or a scanned PDF. Windows reads them itself, on your PC, without sending the snip anywhere. If the app says Windows can't read text in your language, add **Optical character recognition** for it: in **Settings → Time & language → Language & region**, click **…** beside your language, then **Language options**.
+
+In the editor, pick a tool on the left and drag across the snip to draw. Hold Shift to keep lines and arrows to 45° steps, and boxes, highlights and blurs square. Shapes sit on a soft shadow, so they stand out on any snip, and **Opacity** makes them see-through, down to 10%. **Blur** blurs the area you drag across, to hide a name or a password. For text, click where it goes, type, and press Enter. It goes on a rounded label in the color, and **Text Size** sets it from 10 to 24 points. With the **Eraser**, click a shape to take it away: the one under the pointer fades first.
+
+To change a shape, click it. The one you just drew is picked up already, so you can change it straight away. Drag it to move it, drag its dots to resize it, pick another color, opacity, thickness or text size for it, or press Delete.
+
+| Keys | What they do |
+|---|---|
+| R, L, A, H, B, T | Box, line, arrow, highlight, blur, text |
+| E | Eraser |
+| 1 to 6 | Red, green, blue, yellow, black, white |
+| W | Thin or thick lines |
+| Delete | Take away the shape you clicked |
+| Ctrl+Z, Ctrl+Y | Undo, redo |
+| Ctrl+C | Copy it with its shapes. The editor stays open. |
+| Ctrl+S | Save it with its shapes. The editor closes. |
+| Ctrl+W | Close the editor. If there are shapes you haven't copied or saved, it asks first. |
+
+**Save…** saves a PNG, starting in Pictures\Screenshots, where Windows keeps its own screenshots, then wherever you saved last. Windows' own screenshots, with Windows key+Shift+S and Print Screen, keep working too.
 
 ---
 

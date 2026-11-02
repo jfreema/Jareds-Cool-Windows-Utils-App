@@ -148,8 +148,9 @@ sealed class ScreenSnipper : IDisposable
         {
             Log.Error("snip", $"No text recognition for this PC's languages (it has {TextRecognizer.Languages()})");
             BubbleDialog.Show("Windows can't read text in your language",
-                "Copy Text uses Windows' own text recognition. Add it in Settings, Time & language, Language & region: "
-                + "pick your language's options and add Optical character recognition.");
+                "Copy Text uses Windows' own text recognition. To add it, open Settings → Time & language → Language & "
+                + "region, click … beside your language, choose Language options, and add Optical character "
+                + "recognition.");
             return;
         }
         var text = await TextRecognizer.TextIn(snip.Image, snip.Scale);

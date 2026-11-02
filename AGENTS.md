@@ -7,7 +7,7 @@ Notes for any coding agent working on Jared's Cool Windows Utilities App.
 The Windows version of [Jared's Cool Mac Utilities App](https://github.com/jfreema/Jareds-Cool-Mac-Utils-App): a tray
 app with the same bubble pop menu, getting the Mac app's features one at a time. [docs/roadmap.md](docs/roadmap.md)
 tracks which are done: tick items off there as they ship. Jared asked for 0.2.0 to follow 0.1.0 straight away; check
-with him before starting the phases after it. 0.1.0 has window snapping. It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub Releases as an installer
+with him before starting the phases after it. 0.1.0 has window snapping and 0.2.0 the screenshot tool. It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub Releases as an installer
 and a portable exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
 
 The Mac app is the reference for how a feature behaves and looks. Port its logic into pure, tested C# rather than
@@ -52,7 +52,8 @@ delete a side branch from a container, where `git push --delete` is refused, pus
 deletes the branch with `github.token`.
 
 Other test hooks: `--update-now` (installs a newer version without asking, quietly), `--settings <file>`,
-`--test-window [fixed]`, and the `updateFeed` setting, which points Check for Updates elsewhere.
+`--test-window [fixed]`, `--press <letter>` (Win+Alt and the letter, pressed from a process of its own, as the keyboard
+does while you're in another app), and the `updateFeed` setting, which points Check for Updates elsewhere.
 
 ## Code
 
@@ -62,6 +63,7 @@ Other test hooks: `--update-now` (installs a newer version without asking, quiet
 | Menu and windows | `Ui/MenuWindow` (the tray icon's menu), `Ui/Controls` (bubble pop buttons, chips, switches, cards, drawn in `OnRender`), `Ui/Bubble` (colors and fonts), `Ui/BubbleWindows` (alerts and About), `Ui/Frontmost` |
 | Tray icon | `Tray/TrayIcon` (its own `Shell_NotifyIcon`, re-added when Explorer restarts, recolored for a light or dark taskbar) |
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
+| Screenshot tool | `Snipping/ScreenSnipper` (Win+Alt+P, then the menu's choices), `Snipping/SnipOverlay` (the screen picker), `Snipping/SnipOffer` (the menu after a snip), `Snipping/SnipEditorWindow` (the editors), `Snipping/SnipCanvas` and `Snipping/SnipSidebar` (the editor's snip and tools), `Snipping/SnipRenderer` (shapes, drawn the same on the canvas and in what's copied or saved), `Snipping/SnipOutput` (clipboard and PNG files), `Snipping/TextRecognizer` (Copy Text), `Snipping/ScreenCapture`, `Ui/Toast`, and in Core `Snipping/SnipEditorModel` (the editor's logic, step for step as on the Mac), `Annotation`, `SnipLayout` and `Blur` |
 | Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
@@ -85,6 +87,18 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
 - **The hidden window is a real top-level window,** not a message-only one, so that shutdown and the installer's Restart
   Manager can ask the app to close. It handles `WM_CLOSE` and `WM_ENDSESSION` by quitting properly, which removes the
   tray icon.
+- **The screen picker shows a picture of the screen,** taken when Win+Alt+P is pressed, so nothing moves while you
+  choose, and the snip is cut from it. It has a window per display, each put over its display in pixels, since WPF's
+  units differ from display to display. While it's open, and while the menu after a snip is, `Shortcuts.Grab` takes Esc,
+  Space, the arrow keys and Enter from whatever has the focus, since Windows may leave the focus in the app you were in.
+  The menu after a snip opens before the picker closes, so the focus never goes back to that app in between.
+- **The editor draws a shape the way it's saved,** with `SnipRenderer` for both, at the snip's own pixels when copied
+  or saved. Shadows are WPF's `DropShadowEffect`, whose blur spreads about 1.5 times as far as Core Graphics' for the
+  same radius. Copy puts a PNG on the clipboard, which keeps the display's dpi and most apps paste, and a bitmap for
+  apps like Paint.
+- **Copy Text uses `Windows.Media.Ocr`,** through the Windows SDK's .NET projection (the app targets
+  `net10.0-windows10.0.19041.0`). It reads only the languages whose text recognition is installed; without any, the app
+  says how to add it.
 - **Windows tucks new tray icons away under ^,** so the app shows its menu when it's opened by hand (not at login or
   after an update), and opening it again from the Start menu shows the running copy's menu.
 - **Only the app just clicked may come to the front.** The menu closes when it loses the focus, so it must get it

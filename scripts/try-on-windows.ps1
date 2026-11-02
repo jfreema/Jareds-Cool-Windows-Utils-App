@@ -114,8 +114,9 @@ try {
     Start-Process $installed -ArgumentList "--update-now" | Out-Null
     $updated = Wait-Until 240 { (Get-Stamped $installed) -eq "99.0.0" -and @(Get-Running $installed).Count -eq 1 }
     Check "installed copy updates itself and restarts" $updated "now $(Get-Stamped $installed)"
+    $quit = Stop-Copy $installed
     Save-Log "installed"
-    Check "installed copy quits when asked" (Stop-Copy $installed)
+    Check "installed copy quits when asked" $quit
 
     # 3. A portable copy
     if (Test-Path "$data\log.txt") { Remove-Item "$data\log.txt" }
@@ -128,8 +129,9 @@ try {
     $updated = Wait-Until 240 { (Get-Stamped $portable) -eq "99.0.0" -and @(Get-Running $portable).Count -eq 1 }
     Check "portable copy updates itself and restarts" $updated "now $(Get-Stamped $portable)"
     Check "portable copy removes the old one" (Wait-Until 30 { -not (Test-Path "$portable.old") })
+    $quit = Stop-Copy $portable
     Save-Log "portable"
-    Check "portable copy quits when asked" (Stop-Copy $portable)
+    Check "portable copy quits when asked" $quit
 
     # 4. The uninstaller, with Open at Login on
     Set-ItemProperty $runKey -Name JaredsWindowsUtils -Value "`"$installed`" --login"
