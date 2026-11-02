@@ -5,8 +5,8 @@ before the next one starts. This is Jared's plan from November 2, 2026. Tick ite
 
 | Release | Feature | Status |
 |---|---|---|
-| 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | Built, waiting to be released |
-| 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | Not started |
+| 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.0) November 2, 2026 |
+| 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | In progress |
 | 0.3.0 | [Stay awake with the lid closed](#030-stay-awake-with-the-lid-closed) | Not started |
 | 0.4.0 | [Keyboard cleaning](#040-keyboard-cleaning) | Not started |
 | 0.5.0 | [Guitar tuner](#050-guitar-tuner) | Not started |
@@ -16,8 +16,9 @@ before the next one starts. This is Jared's plan from November 2, 2026. Tick ite
 **Not coming to Windows,** which does these itself: App Preview (the taskbar shows an app's windows when you rest the
 pointer on it), Show Hidden Icons (the **^** in the taskbar's corner) and the Mac's lock shortcut (Windows key+L).
 
-Each phase ends with a release that Jared installs and tries before the next phase starts. Within a phase, fixes go out
-as 0.x.1, 0.x.2 and so on (see [AGENTS.md](../AGENTS.md#versioning)).
+Each phase ends with a release that Jared installs and tries. He asked on November 2, 2026 for 0.2.0 to follow 0.1.0
+straight away, without waiting for his tryout. Within a phase, fixes go out as 0.x.1, 0.x.2 and so on (see
+[AGENTS.md](../AGENTS.md#versioning)).
 
 ## 0.1.0: Window snapping
 
@@ -34,7 +35,7 @@ The app itself, and the first feature. Shortcuts are Ctrl+Alt+arrow keys, where 
 - [x] Check for Updates, for the installed and the portable version
 - [x] Installer, for the current user without an administrator's password, and a portable exe, on GitHub Releases
 - [x] A self-test and a trial of the installer, updates and uninstaller on GitHub's Windows machines before each release
-- [ ] Released
+- [x] Released
 - [ ] Tried on Jared's Windows PC
 
 ## 0.2.0: Screenshot tool
