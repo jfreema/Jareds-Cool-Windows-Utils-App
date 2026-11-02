@@ -1,0 +1,81 @@
+{
+  "version": "0.2.0",
+  "passed": true,
+  "checks": [
+    {
+      "name": "self-test passes",
+      "passed": true,
+      "details": "exit code 0, see selftest/report.json"
+    },
+    {
+      "name": "newer build served",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "installer finishes",
+      "passed": true,
+      "details": "exit code 0"
+    },
+    {
+      "name": "installs 0.2.0",
+      "passed": true,
+      "details": "C:\\Users\\runneradmin\\AppData\\Local\\Programs\\JaredsWindowsUtils\\JaredsWindowsUtils.exe"
+    },
+    {
+      "name": "Start menu shortcut",
+      "passed": true,
+      "details": "C:\\Users\\runneradmin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Jared's Windows App.lnk"
+    },
+    {
+      "name": "installed copy updates itself and restarts",
+      "passed": true,
+      "details": "now 99.0.0"
+    },
+    {
+      "name": "installed copy quits when asked",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "portable copy updates itself and restarts",
+      "passed": true,
+      "details": "now 99.0.0"
+    },
+    {
+      "name": "portable copy removes the old one",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "portable copy quits when asked",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "installed copy starts",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "uninstaller removes the app",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "uninstaller quits the app",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "uninstaller removes Open at Login",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "uninstaller removes the shortcut",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}

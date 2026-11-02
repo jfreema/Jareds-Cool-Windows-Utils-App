@@ -1,0 +1,76 @@
+2026-11-02 11:43:32.566 [snap] Window snapping: On
+2026-11-02 11:43:32.581 [snip] Screen snipping: On
+2026-11-02 11:43:32.628 [app] Started 0.2.0 from D:\a\Jareds-Cool-Windows-Utils-App\Jareds-Cool-Windows-Utils-App\out\JaredsWindowsUtils.exe
+2026-11-02 11:43:33.649 [app] Self-test: passed tray icon shown at (797, 720, 32 × 48)
+2026-11-02 11:43:33.650 [app] Self-test: passed watching for shortcuts On
+2026-11-02 11:43:35.414 [app] Self-test: passed menu opens in the screen at (612, 440, 403 × 272)
+2026-11-02 11:43:35.803 [app] Self-test: passed menu closes 
+2026-11-02 11:43:37.457 [app] Open at Login on
+2026-11-02 11:43:37.458 [app] Self-test: passed Open at Login turns on 
+2026-11-02 11:43:37.459 [app] Open at Login off
+2026-11-02 11:43:37.462 [app] Self-test: passed Open at Login turns off 
+2026-11-02 11:43:38.229 [app] Self-test: passed test windows open 
+2026-11-02 11:43:38.457 [app] Self-test: passed left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-02 11:43:38.666 [app] Self-test: passed right half expected (512, 0, 512 × 720), got (512, 0, 512 × 720)
+2026-11-02 11:43:38.870 [app] Self-test: passed right at the last display's edge stays expected nothing, got (512, 0, 512 × 720)
+2026-11-02 11:43:39.078 [app] Self-test: passed up fills the display expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-02 11:43:39.281 [app] Self-test: passed up again stays expected nothing, got (0, 0, 1024 × 720)
+2026-11-02 11:43:39.499 [app] Self-test: passed down: top left quarter expected (0, 0, 512 × 360), got (0, 0, 512 × 360)
+2026-11-02 11:43:39.703 [app] Self-test: passed down: top right quarter expected (512, 0, 512 × 360), got (512, 0, 512 × 360)
+2026-11-02 11:43:39.907 [app] Self-test: passed down: bottom right quarter expected (512, 360, 512 × 360), got (512, 360, 512 × 360)
+2026-11-02 11:43:40.110 [app] Self-test: passed down: bottom left quarter expected (0, 360, 512 × 360), got (0, 360, 512 × 360)
+2026-11-02 11:43:40.312 [app] Self-test: passed down: back to top left expected (0, 0, 512 × 360), got (0, 0, 512 × 360)
+2026-11-02 11:43:40.519 [app] Self-test: passed thirds: left third expected (0, 0, 341 × 720), got (0, 0, 341 × 720)
+2026-11-02 11:43:40.723 [app] Self-test: passed thirds: middle third expected (341, 0, 341 × 720), got (341, 0, 341 × 720)
+2026-11-02 11:43:40.927 [app] Self-test: passed thirds: right third expected (682, 0, 342 × 720), got (682, 0, 342 × 720)
+2026-11-02 11:43:41.134 [app] Self-test: passed thirds: up to the right two thirds expected (341, 0, 683 × 720), got (341, 0, 683 × 720)
+2026-11-02 11:43:41.338 [app] Self-test: passed thirds: up again fills the display expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-02 11:43:42.155 [app] Self-test: passed maximized: left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-02 11:43:42.155 [app] Self-test: passed maximized: no longer maximized 
+2026-11-02 11:43:42.358 [app] Self-test: passed fixed size: centered in the left half expected (53, 213.5, 406 × 293), got (53, 214, 406 × 293)
+2026-11-02 11:43:42.559 [app] Self-test: passed back to the left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-02 11:43:44.880 [app] Self-test: passed Win+Alt+Right snaps the window in front expected (512, 0, 512 × 720), got (512, 0, 512 × 720)
+2026-11-02 11:43:44.880 [app] Self-test: passed Win+Alt+Up fills the display, not Windows' top half expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-02 11:43:44.881 [app] Self-test: passed Start stays closed in front: HwndWrapper[JaredsWindowsUtils;;d345c651-3a9e-4d8a-ac18-17d754285ae0] "Snap Test Window"
+2026-11-02 11:43:48.099 [app] Self-test: passed Win+Alt+Left leaves Notepad's menu bar closed 
+2026-11-02 11:43:48.099 [app] Self-test: passed Win+Alt+Left leaves Start closed in front: Notepad "Untitled - Notepad"
+2026-11-02 11:43:48.175 [app] Self-test: passed watching for Win+Alt+P On
+2026-11-02 11:43:48.924 [app] Self-test: passed snip test window opens 
+2026-11-02 11:43:49.683 [snip] Choosing what to snip
+2026-11-02 11:43:50.331 [app] Self-test: passed Win+Alt+P opens the screen picker 
+2026-11-02 11:43:51.345 [snip] Took a snip, 300 × 200 pixels at 1×
+2026-11-02 11:43:51.646 [app] Self-test: passed a drag snips that part of the screen dragged PointD { X = 167, Y = 160 } to PointD { X = 467, Y = 360 }, expected (167, 160, 300 × 200), got 300 × 200
+2026-11-02 11:43:51.647 [app] Self-test: passed the snip is the window under the drag pixel (235, 242, 255)
+2026-11-02 11:43:52.288 [snip] Copied the snip
+2026-11-02 11:43:52.996 [app] Self-test: passed Copy to Clipboard copies the snip as a PNG 300 × 200 at 96 dpi
+2026-11-02 11:43:52.997 [app] Self-test: passed and as a bitmap, for apps like Paint 
+2026-11-02 11:43:52.997 [app] Self-test: passed the window you were in gets the focus back in front: HwndWrapper[JaredsWindowsUtils;;51f251b2-4793-4173-a667-e91ac605d03c] "Snap Test Window"
+2026-11-02 11:43:53.721 [snip] Choosing what to snip
+2026-11-02 11:43:54.797 [app] Self-test: passed Space switches to snipping a window 
+2026-11-02 11:43:55.365 [snip] Took a snip, 626 × 473 pixels at 1×
+2026-11-02 11:43:55.679 [app] Self-test: passed a click snips the window under it expected (127, 90, 626 × 473), got 626 × 473
+2026-11-02 11:43:55.938 [snip] Copied the snip's text, 2 lines
+2026-11-02 11:43:55.963 [app] Self-test: passed Copy Text copies the words in the window "Snap Test Wndow o x
+Snap me"
+2026-11-02 11:43:55.963 [app] Self-test: passed a note says the text was copied 
+2026-11-02 11:43:58.559 [snip] Choosing what to snip
+2026-11-02 11:44:00.130 [snip] Took a snip, 586 × 403 pixels at 1×
+2026-11-02 11:44:00.607 [snip] Opened a snip in the editor
+2026-11-02 11:44:02.108 [app] Self-test: passed Open in Editor opens the editor 
+2026-11-02 11:44:02.209 [app] Self-test: passed five shapes drawn 5
+2026-11-02 11:44:03.938 [app] Self-test: passed the marked-up snip is the snip's size 586 × 403
+2026-11-02 11:44:03.938 [app] Self-test: passed the box is drawn in red pixel (255, 59, 48)
+2026-11-02 11:44:03.950 [app] Self-test: passed the blur blurs the words under it 17.5 levels apart on average
+2026-11-02 11:44:03.960 [app] Self-test: passed a saved snip is a PNG at the display's dpi 586 × 403 at 96 dpi
+2026-11-02 11:44:04.762 [app] Self-test: passed A picks the arrow Arrow
+2026-11-02 11:44:05.183 [app] Self-test: passed Ctrl+Z takes the last shape away 5 to 4
+2026-11-02 11:44:05.606 [app] Self-test: passed Ctrl+Y puts it back 5
+2026-11-02 11:44:05.631 [snip] Copied the snip from the editor
+2026-11-02 11:44:06.429 [app] Self-test: passed Ctrl+C copies the marked-up snip 586 × 403
+2026-11-02 11:44:06.429 [app] Self-test: passed copying takes the unsaved mark off the title Snip 2026-11-02 at 11.43.58
+2026-11-02 11:44:06.735 [app] Self-test: passed a new shape puts the unsaved mark on the title *Snip 2026-11-02 at 11.43.58
+2026-11-02 11:44:07.737 [app] Self-test: passed closing with shapes that weren't saved asks first 
+2026-11-02 11:44:08.512 [app] Self-test: passed Don't Save closes the editor 
+2026-11-02 11:44:09.236 [snip] Choosing what to snip
+2026-11-02 11:44:09.912 [snip] Snip cancelled
+2026-11-02 11:44:10.512 [app] Self-test: passed Esc cancels the snip 

@@ -1,0 +1,9 @@
+2026-11-02 11:44:24.998 [snap] Window snapping: On
+2026-11-02 11:44:25.014 [snip] Screen snipping: On
+2026-11-02 11:44:25.080 [app] Started 0.2.0 from C:\Users\runneradmin\AppData\Local\Programs\JaredsWindowsUtils\JaredsWindowsUtils.exe
+2026-11-02 11:44:25.737 [update] Installing 99.0.0
+2026-11-02 11:44:26.121 [app] Quit
+2026-11-02 11:44:31.750 [snap] Window snapping: On
+2026-11-02 11:44:31.766 [snip] Screen snipping: On
+2026-11-02 11:44:31.823 [app] Started 99.0.0 from C:\Users\runneradmin\AppData\Local\Programs\JaredsWindowsUtils\JaredsWindowsUtils.exe after an update
+2026-11-02 11:44:32.024 [app] Quit
