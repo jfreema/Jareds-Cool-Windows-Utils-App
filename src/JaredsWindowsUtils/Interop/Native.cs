@@ -8,12 +8,14 @@ static class Native
     // Messages
     public const int WM_DESTROY = 0x0002;
     public const int WM_CLOSE = 0x0010;
+    public const int WM_QUIT = 0x0012;
     public const int WM_QUERYENDSESSION = 0x0011;
     public const int WM_ENDSESSION = 0x0016;
     public const int WM_SETTINGCHANGE = 0x001A;
     public const int WM_CONTEXTMENU = 0x007B;
     public const int WM_DISPLAYCHANGE = 0x007E;
-    public const int WM_HOTKEY = 0x0312;
+    public const int WM_KEYDOWN = 0x0100, WM_KEYUP = 0x0101, WM_SYSKEYDOWN = 0x0104, WM_SYSKEYUP = 0x0105;
+    public const int WM_TIMER = 0x0113;
     public const int WM_LBUTTONUP = 0x0202;
     public const int WM_RBUTTONUP = 0x0205;
     public const int WM_DPICHANGED = 0x02E0;
@@ -48,7 +50,7 @@ static class Native
     public const uint MONITOR_DEFAULTTOPRIMARY = 1;
 
     public const uint MOD_ALT = 0x0001;
-    public const uint MOD_CONTROL = 0x0002;
+    public const uint MOD_WIN = 0x0008;
     public const uint MOD_NOREPEAT = 0x4000;
     public const uint VK_LEFT = 0x25, VK_UP = 0x26, VK_RIGHT = 0x27, VK_DOWN = 0x28;
 
@@ -217,8 +219,56 @@ static class Native
     [DllImport("shcore.dll")]
     public static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint dpiX, out uint dpiY);
 
-    // Hotkeys
+    // Shortcuts: a low-level keyboard hook, on a thread with a message loop of its own
 
+    public const int WH_KEYBOARD_LL = 13;
+    public const int HC_ACTION = 0;
+    public const uint PM_NOREMOVE = 0x0000;
+
+    public delegate IntPtr LowLevelKeyboardProc(int code, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KBDLLHOOKSTRUCT
+    {
+        public uint vkCode, scanCode, flags, time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MSG
+    {
+        public IntPtr hwnd;
+        public int message;
+        public IntPtr wParam, lParam;
+        public uint time;
+        public POINT pt;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true)]
+    public static extern IntPtr SetWindowsHookEx(int hook, LowLevelKeyboardProc callback, IntPtr module, uint threadId);
+
+    [DllImport("user32.dll")]
+    public static extern bool UnhookWindowsHookEx(IntPtr hook);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int key);
+
+    [DllImport("user32.dll", EntryPoint = "GetMessageW")]
+    public static extern int GetMessage(out MSG message, IntPtr hwnd, uint first, uint last);
+
+    [DllImport("user32.dll", EntryPoint = "PeekMessageW")]
+    public static extern bool PeekMessage(out MSG message, IntPtr hwnd, uint first, uint last, uint remove);
+
+    [DllImport("user32.dll", EntryPoint = "PostThreadMessageW", SetLastError = true)]
+    public static extern bool PostThreadMessage(uint threadId, int msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern UIntPtr SetTimer(IntPtr hwnd, UIntPtr id, uint milliseconds, IntPtr callback);
+
+    /// <summary>For the self-test, to see whether Windows holds a shortcut itself</summary>
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint key);
 
@@ -436,11 +486,12 @@ static class Native
     [DllImport("gdi32.dll")]
     public static extern bool DeleteDC(IntPtr hdc);
 
-    // Keyboard input, for the self-test
+    // Keyboard input
 
     public const int INPUT_KEYBOARD = 1;
     public const uint KEYEVENTF_EXTENDEDKEY = 0x0001, KEYEVENTF_KEYUP = 0x0002;
-    public const ushort VK_CONTROL = 0x11, VK_MENU = 0x12;
+    public const ushort VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_ESCAPE = 0x1B, VK_LWIN = 0x5B,
+        VK_RWIN = 0x5C;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KEYBDINPUT
@@ -471,6 +522,40 @@ static class Native
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint SendInput(uint count, INPUT[] inputs, int size);
+
+    // Menu mode, for the self-test
+
+    public const uint GUI_INMENUMODE = 0x04, GUI_SYSTEMMENUMODE = 0x08, GUI_POPUPMENUMODE = 0x10;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GUITHREADINFO
+    {
+        public int cbSize;
+        public uint flags;
+        public IntPtr hwndActive, hwndFocus, hwndCapture, hwndMenuOwner, hwndMoveSize, hwndCaret;
+        public RECT rcCaret;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetGUIThreadInfo(uint threadId, ref GUITHREADINFO info);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetMenu(IntPtr hwnd);
+
+    public const int OBJID_MENU = unchecked((int)0xFFFFFFFD);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MENUBARINFO
+    {
+        public int cbSize;
+        public RECT rcBar;
+        public IntPtr hMenu, hwndMenu;
+        /// <summary>Bit 0: the menu bar has the keyboard, as after Alt on its own. Bit 1: a menu on it does.</summary>
+        public int flags;
+    }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetMenuBarInfo(IntPtr hwnd, int idObject, int idItem, ref MENUBARINFO info);
 
     // Processes
 

@@ -8,11 +8,11 @@
 
 <p align="center">Windows 10 or 11 · 64-bit · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/latest/download/JaredsWindowsUtils.exe">Portable version</a> · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases">All versions</a></p>
 
-<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Ctrl+Alt+arrow keys, Thirds on External Displays, and About, Check for Updates and Quit buttons"></p>
+<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, and About, Check for Updates and Quit buttons"></p>
 
 <table>
   <tr>
-    <td width="50%"><b><a href="#window-snapping">Window snapping</a></b><br>Ctrl+Alt and an arrow key put the window you're in into halves, thirds, quarters or sixths.</td>
+    <td width="50%"><b><a href="#window-snapping">Window snapping</a></b><br>Win+Alt and an arrow key put the window you're in into halves, thirds, quarters or sixths.</td>
     <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: the screenshot tool is next.</td>
   </tr>
 </table>
@@ -34,25 +34,25 @@ To update, choose **Check for Updates** in the app's menu. It installs the newes
 
 ## Window snapping
 
-Hold Ctrl and Alt and press an arrow key to put the window you're working in into halves, thirds, quarters or sixths of its display.
+Hold the Windows key and Alt and press an arrow key to put the window you're working in into halves, thirds, quarters or sixths of its display.
 
-**Turn it on:** it's on from the start. Its switch is **Snap Windows with Ctrl+Alt+arrow keys**, under **Window Snapping** in the menu.
+**Turn it on:** it's on from the start. Its switch is **Snap Windows with Win+Alt+arrow keys**, under **Window Snapping** in the menu.
 
 **Use it:**
 
-- **Ctrl+Alt+Left and Ctrl+Alt+Right** snap the window into the column it's mostly in, then move it a column at a time, across displays.
-- **Ctrl+Alt+Up** widens it to fill the display. From a third, it goes to two thirds first.
-- **Ctrl+Alt+Down** moves it clockwise through the display's quarters, or sixths.
+- **Win+Alt+Left and Win+Alt+Right** snap the window into the column it's mostly in, then move it a column at a time, across displays.
+- **Win+Alt+Up** widens it to fill the display. From a third, it goes to two thirds first.
+- **Win+Alt+Down** moves it clockwise through the display's quarters, or sixths.
 
 Each display has two columns, or three on external displays with **Thirds on External Displays** on. A laptop's own screen keeps two, since it's too narrow for thirds.
 
-| Ctrl+Alt+Left and Ctrl+Alt+Right | Ctrl+Alt+Down |
+| Win+Alt+Left and Win+Alt+Right | Win+Alt+Down |
 |---|---|
 | <img src="docs/snapping-columns.svg" width="400" alt="A laptop's own screen in two halves, the left one lit up, next to a larger external display in three thirds, the middle one lit up"> | <img src="docs/snapping-cells.svg" width="400" alt="A laptop's own screen in four quarters, the top left one lit up, next to a larger external display in six sixths, the top right one lit up"> |
 
-Windows' own snapping, with the Windows key and the arrow keys or by dragging a window to an edge, keeps working too.
+Windows' own snapping, with the Windows key and the arrow keys or by dragging a window to an edge, keeps working too. Windows 11's Win+Alt+Up and Win+Alt+Down, for the top and bottom halves, give way to the app's while snapping is on.
 
-If the menu says **Another app is using a Ctrl+Alt+arrow key**, another app has taken one of the shortcuts. See [troubleshooting](docs/troubleshooting.md#another-app-is-using-a-ctrlaltarrow-key).
+**Why Win+Alt:** the Mac app uses control+option, but on Windows, Ctrl+Alt types accented letters on many keyboards, and VS Code, JetBrains IDEs and Magnifier use Ctrl+Alt+arrow keys. Apps leave the Windows key alone.
 
 ---
 

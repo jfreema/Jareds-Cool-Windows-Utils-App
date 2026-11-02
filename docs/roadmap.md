@@ -22,27 +22,30 @@ straight away, without waiting for his tryout. Within a phase, fixes go out as 0
 
 ## 0.1.0: Window snapping
 
-The app itself, and the first feature. Shortcuts are Ctrl+Alt+arrow keys, where the Mac app has control+option.
+The app itself, and the first feature. Shortcuts are Win+Alt+arrow keys, where the Mac app has control+option. 0.1.0
+used Ctrl+Alt+arrow keys, which 0.1.1 moved off, since Ctrl+Alt types accented letters on many keyboards and code
+editors use it (see [AGENTS.md](../AGENTS.md#what-the-app-is)).
 
 - [x] Tray icon: the J in shades, white on a dark taskbar and black on a light one
 - [x] The bubble pop menu, opening beside the tray icon, with Open at Login, About, Check for Updates and Quit
-- [x] Ctrl+Alt+Left and Ctrl+Alt+Right: halves, or thirds on external displays, and on to the next display
-- [x] Ctrl+Alt+Up: two thirds, then the whole display
-- [x] Ctrl+Alt+Down: around the quarters, or sixths
-- [x] A note in the menu when another app has a Ctrl+Alt+arrow key
+- [x] Win+Alt+Left and Win+Alt+Right: halves, or thirds on external displays, and on to the next display
+- [x] Win+Alt+Up: two thirds, then the whole display
+- [x] Win+Alt+Down: around the quarters, or sixths
 - [x] Open at Login, through the list Task Manager shows as Startup apps
 - [x] About, with the version
 - [x] Check for Updates, for the installed and the portable version
 - [x] Installer, for the current user without an administrator's password, and a portable exe, on GitHub Releases
 - [x] A self-test and a trial of the installer, updates and uninstaller on GitHub's Windows machines before each release
 - [x] Released
+- [x] 0.1.1: the shortcuts move from Ctrl+Alt to Win+Alt, caught ahead of Windows, which has Win+Alt+Up and Down
+  ([released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.1) November 2, 2026)
 - [ ] Tried on Jared's Windows PC
 
 ## 0.2.0: Screenshot tool
 
 As on the Mac, but without recording GIFs, which is 0.7.0.
 
-- [ ] Ctrl+Alt+P snips part of the screen, or a whole window with Space; Esc cancels
+- [ ] Win+Alt+P snips part of the screen, or a whole window with Space; Esc cancels
 - [ ] A menu where you let go: Copy to Clipboard, Copy Text, Open in Editor, Save
 - [ ] Copy Text reads the words in the snip on the PC itself (Windows' own text recognition)
 - [ ] The bubble pop editor, its tools down the left: box, line, arrow, highlight, blur, text, eraser
@@ -82,7 +85,7 @@ The sequencer and the drum sounds are ported from the Mac app already, with thei
 
 ## 0.7.0: Record GIFs
 
-- [ ] Ctrl+Alt+R records part of the screen as a GIF, like scrolling through a page, turned on with an option under the
+- [ ] Win+Alt+G records part of the screen as a GIF, like scrolling through a page, turned on with an option under the
       screenshot tool's switch, as on the Mac
 - [ ] Copy to Clipboard and Save
 - [ ] Released and tried

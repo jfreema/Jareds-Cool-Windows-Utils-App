@@ -28,7 +28,7 @@ public static class SnapLayout
         return direction == Direction.Right ? theirs[0] : theirs[^1];
     }
 
-    /// <summary>Where Ctrl+Alt+Up sends the window: the whole display, or on a display in thirds, two thirds first.
+    /// <summary>Where Win+Alt+Up sends the window: the whole display, or on a display in thirds, two thirds first.
     /// Null once it fills the display.</summary>
     /// <param name="lastTarget">Where the app last put this window, if it hasn't moved since</param>
     public static RectD? Expanded(RectD window, IReadOnlyList<Display> displays, RectD? lastTarget = null)
@@ -51,7 +51,7 @@ public static class SnapLayout
         return best;
     }
 
-    /// <summary>Where Ctrl+Alt+Down sends the window: around the display's quarters in halves, or its sixths in
+    /// <summary>Where Win+Alt+Down sends the window: around the display's quarters in halves, or its sixths in
     /// thirds, clockwise from the top left. The first press snaps it into the one it's mostly in.</summary>
     /// <param name="lastTarget">Where the app last put this window, if it hasn't moved since</param>
     public static RectD? Cycled(RectD window, IReadOnlyList<Display> displays, RectD? lastTarget = null)

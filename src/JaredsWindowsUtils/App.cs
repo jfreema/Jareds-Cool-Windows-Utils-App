@@ -19,6 +19,7 @@ sealed class App : Application
     Settings settings = null!;
     MessageWindow messages = null!;
     TrayIcon tray = null!;
+    Shortcuts shortcuts = null!;
     WindowSnapper snapper = null!;
     Updater updater = null!;
     MenuWindow? menu;
@@ -50,8 +51,8 @@ sealed class App : Application
         settings = new Settings(options.SettingsPath ?? AppInfo.SettingsPath);
         messages = new MessageWindow(Program.WindowTitle);
         messages.Listen(Handle);
-        var hotKeys = new HotKeys(messages);
-        snapper = new WindowSnapper(settings, hotKeys);
+        shortcuts = new Shortcuts(Dispatcher);
+        snapper = new WindowSnapper(settings, shortcuts);
         snapper.Changed += RefreshMenu;
         snapper.Start();
         updater = new Updater(settings, Quit);
@@ -128,7 +129,7 @@ sealed class App : Application
             menu.Activate();
             return;
         }
-        // The app holding a Ctrl+Alt+arrow key may have quit since
+        // Puts the keyboard hook back in, in case Windows took it out
         snapper.Refresh();
         var window = new MenuWindow();
         window.Toggled += Flip;
@@ -152,8 +153,8 @@ sealed class App : Application
         OpenAtLogin: OpenAtLogin.IsOn,
         SnapWindows: snapper.IsEnabled,
         SnapThirds: snapper.UsesThirds,
-        SnapNote: snapper.Status == WindowSnapper.State.ShortcutTaken
-            ? "Another app is using a Ctrl+Alt+arrow key"
+        SnapNote: snapper.Status == WindowSnapper.State.Unavailable
+            ? "Windows didn't let the app watch for Win+Alt+arrow keys"
             : null,
         IsCheckingForUpdates: updater.IsBusy);
 
@@ -222,6 +223,7 @@ sealed class App : Application
         menu?.Dismiss();
         tray.Dispose();
         snapper.Dispose();
+        shortcuts.Dispose();
         messages.Dispose();
         Log.Info("app", "Quit");
         Shutdown();
@@ -234,6 +236,7 @@ sealed class App : Application
             hasQuit = true;
             tray.Dispose();
             snapper.Dispose();
+            shortcuts.Dispose();
             messages.Dispose();
         }
         base.OnExit(e);

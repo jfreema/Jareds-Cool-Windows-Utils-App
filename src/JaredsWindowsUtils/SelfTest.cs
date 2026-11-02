@@ -45,7 +45,16 @@ static class SelfTest
                 $"{m.Device} {m.Frame} visible {m.Visible}{(m.IsPrimary ? " primary" : "")}{(m.IsInternal ? " internal" : "")}"));
             facts["dpi"] = DpiAt(new POINT()).ToString();
             Add("tray icon shown", app.Tray.IsShown, $"at {Describe(app.Tray.Bounds())}");
-            Add("shortcuts registered", app.Snapper.Status == WindowSnapper.State.On, app.Snapper.Status.ToString());
+            Add("watching for shortcuts", app.Snapper.Status == WindowSnapper.State.On, app.Snapper.Status.ToString());
+            // Whether Windows holds these itself, which is why the app catches its shortcuts with a keyboard hook
+            foreach (var key in new[] { VK_LEFT, VK_UP })
+            {
+                bool free = RegisterHotKey(IntPtr.Zero, 0xBFFF, MOD_WIN | MOD_ALT | MOD_NOREPEAT, key);
+                facts[$"{Shortcuts.Describe(key)} free to register"] = free
+                    ? "yes"
+                    : $"no ({Marshal.GetLastWin32Error()})";
+                if (free) UnregisterHotKey(IntPtr.Zero, 0xBFFF);
+            }
 
             // The menu where it opens, and pictures of it and the dialogs
             app.ShowMenu();
@@ -78,6 +87,7 @@ static class SelfTest
             Add("Open at Login turns off", !OpenAtLogin.IsOn);
 
             await Snapping(app, folder, Add, facts);
+            await NoMenus(folder, Add, facts);
         }
         catch (Exception exception)
         {
@@ -163,21 +173,31 @@ static class SelfTest
                     SnapLayout.Place(fixedFrame.Size, halves[0], area));
             }
 
-            // The shortcut itself, on the window in front
+            // The shortcuts themselves, pressed on the keyboard with the test window in front. Win+Alt+Up is Windows
+            // 11's top half, which window snapping takes over.
             await Expect("back to the left half", window, SnapAction.Left, halves[0]);
             Press(VK_MENU);
             SetForegroundWindow(window);
             await Task.Delay(400);
             bool inFront = GetForegroundWindow() == window;
             facts["test window in front"] = inFront.ToString();
-            Chord(VK_CONTROL, VK_MENU, (ushort)VK_RIGHT);
+            await Chord(VK_LWIN, VK_MENU, (ushort)VK_RIGHT);
             await Task.Delay(800);
-            var afterShortcut = WindowMover.FrameOf(window);
+            var afterRight = WindowMover.FrameOf(window);
+            await Chord(VK_LWIN, VK_MENU, (ushort)VK_UP);
+            await Task.Delay(800);
+            var afterUp = WindowMover.FrameOf(window);
+            var front = GetForegroundWindow();
             Save(Screen(), Path.Combine(folder, "screen-snapped.png"));
             if (inFront)
             {
-                add("Ctrl+Alt+Right snaps the window in front", afterShortcut is { } frame && frame.IsClose(halves[1], 1),
-                    $"expected {halves[1]}, got {Describe(afterShortcut)}");
+                add($"{Shortcuts.Describe(VK_RIGHT)} snaps the window in front",
+                    afterRight is { } right && right.IsClose(halves[1], 1),
+                    $"expected {halves[1]}, got {Describe(afterRight)}");
+                add($"{Shortcuts.Describe(VK_UP)} fills the display, not Windows' top half",
+                    afterUp is { } up && up.IsClose(area, 1), $"expected {area}, got {Describe(afterUp)}");
+                // Pressed and let go on its own, the Windows key opens Start
+                add("Start stays closed", front == window, $"in front: {ClassName(front)} \"{WindowText(front)}\"");
             }
         }
         finally
@@ -194,6 +214,75 @@ static class SelfTest
                 }
             }
         }
+    }
+
+    /// <summary>Alt pressed and let go on its own opens the menu bar of the window in front, and the shortcuts keep their
+    /// own key from the window, so the app presses a key no keyboard has to mask it. Notepad has a menu bar to try.
+    /// </summary>
+    static async Task NoMenus(string folder, Action<string, bool, string> add, Dictionary<string, string> facts)
+    {
+        Process? notepad = null;
+        try
+        {
+            notepad = Process.Start(new ProcessStartInfo("notepad.exe") { UseShellExecute = true });
+            var window = notepad == null ? IntPtr.Zero : await MainWindow(notepad);
+            if (window == IntPtr.Zero || GetMenu(window) == IntPtr.Zero)
+            {
+                facts["notepad"] = window == IntPtr.Zero ? "didn't open" : "no menu bar";
+                return;
+            }
+            // Notepad usually comes in front by itself. Alt, which lets another app's window come in front, would open
+            // its menu bar then, so it's only pressed when Notepad didn't.
+            await Task.Delay(600);
+            if (GetForegroundWindow() != window)
+            {
+                Press(VK_MENU);
+                SetForegroundWindow(window);
+                await Task.Delay(600);
+            }
+            Press(VK_ESCAPE);
+            await Task.Delay(400);
+            facts["Notepad in front"] = (GetForegroundWindow() == window).ToString();
+            facts["Notepad's menu bar open to start with"] = InMenuMode(window).ToString();
+            // First, that Alt on its own opens it here, or the check below proves nothing
+            Press(VK_MENU);
+            await Task.Delay(500);
+            bool opens = InMenuMode(window);
+            facts["Alt on its own opens Notepad's menu bar"] = opens.ToString();
+            Save(Screen(), Path.Combine(folder, "screen-notepad-alt.png"));
+            Press(VK_ESCAPE);
+            await Task.Delay(500);
+            if (!opens || InMenuMode(window)) return;
+            await Chord(VK_LWIN, VK_MENU, (ushort)VK_LEFT);
+            await Task.Delay(800);
+            Save(Screen(), Path.Combine(folder, "screen-notepad-chord.png"));
+            add($"{Shortcuts.Describe(VK_LEFT)} leaves Notepad's menu bar closed", !InMenuMode(window), "");
+            var front = GetForegroundWindow();
+            add($"{Shortcuts.Describe(VK_LEFT)} leaves Start closed", front == window,
+                $"in front: {ClassName(front)} \"{WindowText(front)}\"");
+        }
+        finally
+        {
+            try
+            {
+                notepad?.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                // Gone already
+            }
+            notepad?.Dispose();
+        }
+    }
+
+    /// <summary>The menu bar has the keyboard, as after Alt on its own, or one of its menus is open</summary>
+    static bool InMenuMode(IntPtr window)
+    {
+        var bar = new MENUBARINFO { cbSize = Marshal.SizeOf<MENUBARINFO>() };
+        if (GetMenuBarInfo(window, OBJID_MENU, 0, ref bar) && (bar.flags & 0b11) != 0) return true;
+        var info = new GUITHREADINFO { cbSize = Marshal.SizeOf<GUITHREADINFO>() };
+        return GetGUIThreadInfo(GetWindowThreadProcessId(window, out _), ref info)
+            && (info.flags & (GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE)) != 0;
     }
 
     static async Task<IntPtr> MainWindow(Process process)
@@ -258,8 +347,13 @@ static class SelfTest
 
     static void Press(ushort key) => Send([Key(key, false), Key(key, true)]);
 
-    static void Chord(params ushort[] keys) =>
-        Send([.. keys.Select(k => Key(k, false)), .. keys.Reverse().Select(k => Key(k, true))]);
+    /// <summary>Keys pressed together as fingers press them: down in turn, held a moment, then let go</summary>
+    static async Task Chord(params ushort[] keys)
+    {
+        Send([.. keys.Select(k => Key(k, false))]);
+        await Task.Delay(120);
+        Send([.. keys.Reverse().Select(k => Key(k, true))]);
+    }
 
     static INPUT Key(ushort key, bool up) => new()
     {
@@ -267,7 +361,7 @@ static class SelfTest
         ki = new KEYBDINPUT
         {
             wVk = key,
-            dwFlags = (up ? KEYEVENTF_KEYUP : 0) | (key is >= 0x21 and <= 0x28 ? KEYEVENTF_EXTENDEDKEY : 0),
+            dwFlags = (up ? KEYEVENTF_KEYUP : 0) | (key is >= 0x21 and <= 0x28 or VK_LWIN ? KEYEVENTF_EXTENDEDKEY : 0),
         },
     };
 

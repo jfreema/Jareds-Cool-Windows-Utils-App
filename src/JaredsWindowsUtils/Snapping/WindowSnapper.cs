@@ -3,11 +3,14 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Snapping;
 
-/// <summary>Ctrl+Alt+Left and Ctrl+Alt+Right throw the window in front between columns and displays, Ctrl+Alt+Up
-/// widens it, and Ctrl+Alt+Down takes it around the display's quarters or sixths</summary>
+/// <summary>Win+Alt+Left and Win+Alt+Right throw the window in front between columns and displays, Win+Alt+Up widens
+/// it, and Win+Alt+Down takes it around the display's quarters or sixths. The Mac app uses control+option, but Ctrl+Alt
+/// is AltGr on many keyboards, and VS Code, JetBrains IDEs and Magnifier use it with the arrow keys, while apps leave the
+/// Windows key alone. Windows 11's own Win+Alt+Up and Down, the top and bottom halves, give way to these.</summary>
 sealed class WindowSnapper : IDisposable
 {
-    public enum State { Off, ShortcutTaken, On }
+    /// <summary>Unavailable: Windows wouldn't let the app watch the keyboard</summary>
+    public enum State { Off, Unavailable, On }
 
     static class Keys
     {
@@ -25,20 +28,19 @@ sealed class WindowSnapper : IDisposable
         "#32768",
     ];
 
-    static readonly (uint Key, SnapAction Action)[] Shortcuts =
+    static readonly (uint Key, SnapAction Action)[] ArrowKeys =
     [
         (VK_LEFT, SnapAction.Left), (VK_RIGHT, SnapAction.Right), (VK_UP, SnapAction.Expand),
         (VK_DOWN, SnapAction.Cycle),
     ];
 
     readonly Settings settings;
-    readonly HotKeys hotKeys;
-    readonly List<int> registered = [];
+    readonly Shortcuts shortcuts;
 
-    public WindowSnapper(Settings settings, HotKeys hotKeys)
+    public WindowSnapper(Settings settings, Shortcuts shortcuts)
     {
         this.settings = settings;
-        this.hotKeys = hotKeys;
+        this.shortcuts = shortcuts;
     }
 
     public event Action? Changed;
@@ -67,15 +69,17 @@ sealed class WindowSnapper : IDisposable
         Changed?.Invoke();
     }
 
-    /// <summary>Matches the shortcuts and status to the switch. Run again when the menu opens, in case the app holding
-    /// a shortcut has quit since.</summary>
+    /// <summary>Matches the shortcuts and status to the switch. Run again when the menu opens, which also puts the
+    /// keyboard hook back in, in case Windows took it out.</summary>
     public void Refresh()
     {
-        State next;
-        if (!IsEnabled) next = State.Off;
-        else if (registered.Count == 0 && !Register()) next = State.ShortcutTaken;
-        else next = State.On;
-        if (next != State.On) Unregister();
+        foreach (var (key, action) in ArrowKeys)
+        {
+            if (IsEnabled) shortcuts.Add(key, () => Pressed(action));
+            else shortcuts.Remove(key);
+        }
+        if (IsEnabled) shortcuts.Rehook();
+        var next = !IsEnabled ? State.Off : shortcuts.IsWatching ? State.On : State.Unavailable;
         if (next == Status) return;
         Status = next;
         Log.Info("snap", $"Window snapping: {next}");
@@ -113,31 +117,9 @@ sealed class WindowSnapper : IDisposable
         return ShellClasses.Contains(ClassName(window)) ? IntPtr.Zero : window;
     }
 
-    /// <summary>False if another app holds any of the shortcuts</summary>
-    bool Register()
-    {
-        foreach (var (key, action) in Shortcuts)
-        {
-            if (hotKeys.Register(MOD_CONTROL | MOD_ALT, key, () => Pressed(action)) is not { } id)
-            {
-                Log.Error("snap", $"Another app is using {HotKeys.Describe(MOD_CONTROL | MOD_ALT, key)}");
-                Unregister();
-                return false;
-            }
-            registered.Add(id);
-        }
-        return true;
-    }
-
-    void Unregister()
-    {
-        foreach (var id in registered) hotKeys.Unregister(id);
-        registered.Clear();
-    }
-
     public void Dispose()
     {
-        Unregister();
+        foreach (var (key, _) in ArrowKeys) shortcuts.Remove(key);
         Mover.Dispose();
     }
 }

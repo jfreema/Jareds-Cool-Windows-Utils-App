@@ -26,13 +26,12 @@ open the folder. The log says what the app did and why something didn't work.
 
 ## Window snapping
 
-- **"Another app is using a Ctrl+Alt+arrow key."** Another app holds one of the shortcuts, and Windows gives each one to
-  a single app. On some PCs it's the Intel graphics software, which can use Ctrl+Alt+arrow keys to turn the screen
-  around: open **Intel Graphics Command Center**, choose **System**, then **Hotkeys**, and turn them off. Otherwise, look
-  for a window manager or a remote desktop app, and quit it or change its shortcuts. Then open the app's menu, which
-  tries the shortcuts again.
-- **A window of an app run as administrator doesn't move.** Windows doesn't let other apps move those windows. Run that
-  app normally, or snap it with Windows' own Windows key+arrow keys.
+- **Win+Alt+arrow keys do nothing.** Make sure **Snap Windows with Win+Alt+arrow keys** is on in the menu. If the menu
+  says **Windows didn't let the app watch for Win+Alt+arrow keys**, security software may be blocking it: the app
+  watches the keyboard for its shortcuts, so that it gets them before Windows does. Opening the menu tries again.
+- **A window of an app run as administrator doesn't move.** Windows doesn't let other apps move those windows, or see
+  the keys you press in them, so Windows' own Win+Alt+Up and Win+Alt+Down work there instead. Run that app normally, or
+  snap it with Windows' own Windows key+arrow keys.
 - **A window doesn't fill its column exactly.** Some apps keep a minimum size, and some can't be resized at all. The app
   centers those on the column and keeps them on the display.
 - **A full-screen window doesn't move,** like a game or a video. Leave full screen first.

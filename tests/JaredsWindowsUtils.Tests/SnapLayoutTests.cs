@@ -218,7 +218,7 @@ public class SnapLayoutTests
         Assert.Equal(new RectD(0, 0, 480, 875), Thirds(leftTwo, [Main], Direction.Left));
     }
 
-    // Ctrl+Alt+Down. The main display's visible area is 875 pixels tall: a 437-pixel top row and a 438-pixel bottom one.
+    // Win+Alt+Down. The main display's visible area is 875 pixels tall: a 437-pixel top row and a 438-pixel bottom one.
 
     static readonly RectD TopLeft = new(0, 0, 720, 437);
     static readonly RectD TopRight = new(720, 0, 720, 437);

@@ -11,8 +11,18 @@ with him before starting the phases after it. 0.1.0 has window snapping. It's C#
 and a portable exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
 
 The Mac app is the reference for how a feature behaves and looks. Port its logic into pure, tested C# rather than
-reinventing it, and keep its labels, with the shortcuts spelled out as Windows names them: "Ctrl+Alt+arrow keys" where
-the Mac says "control+option+arrow keys".
+reinventing it, and keep its labels, with the shortcuts spelled out as Windows writes them: "Win+Alt+arrow keys".
+
+**Shortcuts** are Win+Alt and one key where the Mac app uses control+option: Win+Alt+arrow keys snap windows,
+Win+Alt+P snips (0.2.0) and Win+Alt+G will record GIFs (0.7.0). Jared chose them on November 2, 2026, asking for no
+significant clashes and no three-key shortcuts. Ctrl+Alt is AltGr on many keyboard layouts (Ctrl+Alt+P types ö on
+US-International), and VS Code, Visual Studio, JetBrains IDEs, Word and Magnifier use Ctrl+Alt+arrow keys or
+Ctrl+Alt+P, while apps leave the Windows key alone. Win+Ctrl+Left/Right switch desktops and Win+Shift+arrows move
+windows between displays. `Shortcuts` catches the app's shortcuts with a low-level keyboard hook, ahead of Windows: it
+takes over Windows 11's Win+Alt+Up and Down (top and bottom halves) on purpose, and Game Bar's Win+Alt+G ("record the
+last 30 seconds"). Win+Alt keys Windows, Game Bar and PowerToys already use: B, D, G, H, K, P (PowerToys' optional
+Mouse Pointer Crosshairs), R, S, T, Space, period, numbers, PrtScn, Up, Down. Check any new shortcut against Windows,
+Game Bar, PowerToys, Office, browsers and code editors.
 
 **Names:** users see Jared's Cool Windows Utilities App (`AppInfo.FullName`), or Jared's Windows App (`AppInfo.Name`) in
 alerts, tooltips and the Start menu. The menu's header says Jared's Cool Windows App (`AppInfo.MenuTitle`). On disk
@@ -52,7 +62,7 @@ Other test hooks: `--update-now` (installs a newer version without asking, quiet
 | Menu and windows | `Ui/MenuWindow` (the tray icon's menu), `Ui/Controls` (bubble pop buttons, chips, switches, cards, drawn in `OnRender`), `Ui/Bubble` (colors and fonts), `Ui/BubbleWindows` (alerts and About), `Ui/Frontmost` |
 | Tray icon | `Tray/TrayIcon` (its own `Shell_NotifyIcon`, re-added when Explorer restarts, recolored for a light or dark taskbar) |
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
-| Shared | `HotKeys` (every global shortcut), `Interop/MessageWindow` (the hidden window that hears the tray, shortcuts, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
+| Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
 Put logic that can be pure, like geometry, parsing and audio maths, in `JaredsWindowsUtils.Core` (plain `net10.0`, no
@@ -66,8 +76,12 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
   as it arrives on a display with another scale, so the mover tries twice, then centers what won't fit.
 - **The UI thread must never wait on another app.** Moving a window waits for its app, so `WindowMover` has its own
   thread and skips hung windows.
-- **Windows gives each global shortcut to one app.** `RegisterHotKey` fails if another app has it, and the menu then says
-  so. Opening the menu tries again. Intel's graphics software can hold Ctrl+Alt+arrow keys.
+- **The keyboard hook must answer at once.** `Shortcuts` runs it on a thread of its own with a message loop, since every
+  key anyone presses waits for it, and Windows silently takes out a hook that's too slow; the hook goes back in every
+  minute and when the menu opens. It keeps the shortcut's key from Windows and the app in front, so it presses an unused
+  key (0xE8) while Win and Alt are down: Win pressed and let go on its own opens Start, and Alt on its own opens the
+  menu bar of the window in front. The self-test checks both with Notepad. The hook doesn't hear keys pressed in apps run
+  as administrator.
 - **The hidden window is a real top-level window,** not a message-only one, so that shutdown and the installer's Restart
   Manager can ask the app to close. It handles `WM_CLOSE` and `WM_ENDSESSION` by quitting properly, which removes the
   tray icon.

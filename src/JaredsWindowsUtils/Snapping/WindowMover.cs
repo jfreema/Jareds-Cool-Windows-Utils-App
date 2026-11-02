@@ -8,13 +8,13 @@ namespace JaredsWindowsUtils.Snapping;
 /// <summary>What a shortcut asks of the window in front</summary>
 enum SnapAction
 {
-    /// <summary>Ctrl+Alt+Left: a column to the left, or onto the display to the left</summary>
+    /// <summary>Win+Alt+Left: a column to the left, or onto the display to the left</summary>
     Left,
-    /// <summary>Ctrl+Alt+Right</summary>
+    /// <summary>Win+Alt+Right</summary>
     Right,
-    /// <summary>Ctrl+Alt+Up: wider, up to the whole display</summary>
+    /// <summary>Win+Alt+Up: wider, up to the whole display</summary>
     Expand,
-    /// <summary>Ctrl+Alt+Down: around the display's quarters or sixths</summary>
+    /// <summary>Win+Alt+Down: around the display's quarters or sixths</summary>
     Cycle,
 }
 

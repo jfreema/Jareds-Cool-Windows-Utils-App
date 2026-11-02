@@ -4,7 +4,7 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Interop;
 
-/// <summary>The app's hidden window: it hears the tray icon, the hotkeys, the taskbar restarting, theme changes, and
+/// <summary>The app's hidden window: it hears the tray icon, the taskbar restarting, theme changes, and
 /// other copies of the app. A real top-level window that's never shown, rather than a message-only one, so that
 /// Windows' shutdown and the installer's Restart Manager can find it and ask the app to close.</summary>
 sealed class MessageWindow : IDisposable

@@ -67,7 +67,7 @@ VersionInfoCompany=jfreema
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-FinishedLabel=Setup has installed [name] on your computer. Find it in the taskbar's corner, or under ^ there if Windows tucked it away. Window snapping is on: try Ctrl+Alt+Left on a window.
+FinishedLabel=Setup has installed [name] on your computer. Find it in the taskbar's corner, or under ^ there if Windows tucked it away. Window snapping is on: try Win+Alt+Left on a window.
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

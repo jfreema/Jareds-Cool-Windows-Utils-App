@@ -32,7 +32,7 @@ sealed class MenuWindow : Window
     {
         ToolTip = $"Opens {AppInfo.Name} when you sign in to Windows",
     };
-    readonly ToggleRow snapWindows = new("Snap Windows with Ctrl+Alt+arrow keys", showsDivider: false);
+    readonly ToggleRow snapWindows = new("Snap Windows with Win+Alt+arrow keys", showsDivider: false);
     readonly ChipToggle snapThirds = new("Thirds on External Displays")
     {
         ToolTip = "Three columns instead of two on external displays",
