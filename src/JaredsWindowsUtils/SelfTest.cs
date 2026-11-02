@@ -307,14 +307,24 @@ static partial class SelfTest
         window.Close();
     }
 
-    /// <summary>The window's content drawn at a scale, see-through around its rounded corners</summary>
+    /// <summary>The window's content and its margin drawn at a scale, see-through around its rounded corners. It's
+    /// drawn through a brush, since RenderTargetBitmap shifts content that's away from the window's corner, like the
+    /// toast's centered card.</summary>
     static BitmapSource Render(Window window, double scale)
     {
         var content = (FrameworkElement)window.Content;
-        var size = new Size(content.ActualWidth, content.ActualHeight);
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(size.Width * scale), (int)Math.Ceiling(size.Height * scale),
+        var margin = content.Margin;
+        var area = new Rect(-margin.Left, -margin.Top, content.ActualWidth + margin.Left + margin.Right,
+            content.ActualHeight + margin.Top + margin.Bottom);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(area.Width * scale), (int)Math.Ceiling(area.Height * scale),
             96 * scale, 96 * scale, PixelFormats.Pbgra32);
-        bitmap.Render(content);
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen())
+        {
+            var brush = new VisualBrush(content) { Viewbox = area, ViewboxUnits = BrushMappingMode.Absolute };
+            context.DrawRectangle(brush, null, new Rect(area.Size));
+        }
+        bitmap.Render(drawing);
         return bitmap;
     }
 
