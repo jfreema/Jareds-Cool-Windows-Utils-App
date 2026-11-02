@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace JaredsWindowsUtils.Interop;
 
 /// <summary>The Win32 calls the app makes. Coordinates are real pixels: the app is per-monitor DPI aware.</summary>
-static class Native
+static partial class Native
 {
     // Messages
     public const int WM_DESTROY = 0x0002;
