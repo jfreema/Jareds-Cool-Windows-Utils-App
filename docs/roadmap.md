@@ -6,7 +6,7 @@ before the next one starts. This is Jared's plan from November 2, 2026. Tick ite
 | Release | Feature | Status |
 |---|---|---|
 | 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.0) November 2, 2026 |
-| 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | In progress |
+| 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.2.0) November 2, 2026 |
 | 0.3.0 | [Stay awake with the lid closed](#030-stay-awake-with-the-lid-closed) | Not started |
 | 0.4.0 | [Keyboard cleaning](#040-keyboard-cleaning) | Not started |
 | 0.5.0 | [Guitar tuner](#050-guitar-tuner) | Not started |
@@ -45,13 +45,15 @@ editors use it (see [AGENTS.md](../AGENTS.md#what-the-app-is)).
 
 As on the Mac, but without recording GIFs, which is 0.7.0.
 
-- [ ] Win+Alt+P snips part of the screen, or a whole window with Space; Esc cancels
-- [ ] A menu where you let go: Copy to Clipboard, Copy Text, Open in Editor, Save
-- [ ] Copy Text reads the words in the snip on the PC itself (Windows' own text recognition)
-- [ ] The bubble pop editor, its tools down the left: box, line, arrow, highlight, blur, text, eraser
-- [ ] Colors, opacity, line thickness and text sizes; click a shape to move, resize or delete it
-- [ ] The editor's single-key shortcuts, and Ctrl+Z, Ctrl+C and Ctrl+S
-- [ ] Released and tried
+- [x] Win+Alt+P snips part of the screen, or a whole window with Space; Esc cancels
+- [x] A menu where you let go: Copy to Clipboard, Copy Text, Open in Editor, Save
+- [x] Copy Text reads the words in the snip on the PC itself (Windows' own text recognition)
+- [x] The bubble pop editor, its tools down the left: box, line, arrow, highlight, blur, text, eraser
+- [x] Colors, opacity, line thickness and text sizes; click a shape to move, resize or delete it
+- [x] The editor's single-key shortcuts, and Ctrl+Z, Ctrl+C and Ctrl+S
+- [x] The self-test snips, copies, reads text and draws in the editor on GitHub's Windows machines before each release
+- [x] Released
+- [ ] Tried on Jared's Windows PC
 
 ## 0.3.0: Stay awake with the lid closed
 

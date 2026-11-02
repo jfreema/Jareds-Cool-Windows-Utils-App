@@ -112,8 +112,8 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
   the README's download links and Check for Updates find them by name.
 - **Unsigned:** there's no code signing certificate, so SmartScreen warns on first run (see the README). Files the
   updater downloads have no mark of the web, so updates don't warn.
-- **WPF can't be trimmed,** so the app carries all of .NET: the installer is about 45 MB and the portable exe about
-  60 MB.
+- **WPF can't be trimmed,** so the app carries all of .NET, and the Windows SDK's projection for Copy Text: in 0.2.0
+  the installer is about 49 MB and the portable exe about 68 MB.
 
 ## Versioning
 
