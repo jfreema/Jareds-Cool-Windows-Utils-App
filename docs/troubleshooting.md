@@ -1,0 +1,47 @@
+# Troubleshooting
+
+The app keeps a log in `%LocalAppData%\JaredsWindowsUtils\log.txt`: paste that path into File Explorer's address bar to
+open the folder. The log says what the app did and why something didn't work.
+
+## Installing
+
+- **"Windows protected your PC."** Microsoft Defender SmartScreen warns about apps it doesn't know yet, and this one
+  isn't signed with a paid certificate. Click **More info**, then **Run anyway**.
+- **Your browser says the file isn't commonly downloaded.** The same reason. In Edge, open the downloads list, click
+  **…** beside the file, then **Keep**. In Chrome, click **Keep** in the downloads list.
+- **Windows asks for an administrator's password.** It shouldn't: the installer installs for you alone, in
+  `%LocalAppData%\Programs\JaredsWindowsUtils`. If your PC is managed by an organization, it may not allow apps there.
+  Try the portable version instead.
+
+## The tray icon
+
+- **The icon isn't in the taskbar's corner.** Windows tucks new icons away under the **^** beside the clock. Click the
+  **^**, then drag the app's icon (the J in shades) onto the taskbar. On Windows 11 you can also turn it on in
+  **Settings → Personalization → Taskbar → Other system tray icons**.
+- **The app isn't running at all.** Open **Jared's Windows App** from the Start menu. Turn on **Open at Login** in its
+  menu so it starts each time you sign in.
+- **Open at Login is on, but the app doesn't start.** It may be turned off in Task Manager: open Task Manager, choose
+  **Startup apps**, and enable **Jared's Cool Windows Utilities App**. Turning **Open at Login** off and on in the menu
+  does the same.
+
+## Window snapping
+
+- **"Another app is using a Ctrl+Alt+arrow key."** Another app holds one of the shortcuts, and Windows gives each one to
+  a single app. On some PCs it's the Intel graphics software, which can use Ctrl+Alt+arrow keys to turn the screen
+  around: open **Intel Graphics Command Center**, choose **System**, then **Hotkeys**, and turn them off. Otherwise, look
+  for a window manager or a remote desktop app, and quit it or change its shortcuts. Then open the app's menu, which
+  tries the shortcuts again.
+- **A window of an app run as administrator doesn't move.** Windows doesn't let other apps move those windows. Run that
+  app normally, or snap it with Windows' own Windows key+arrow keys.
+- **A window doesn't fill its column exactly.** Some apps keep a minimum size, and some can't be resized at all. The app
+  centers those on the column and keeps them on the display.
+- **A full-screen window doesn't move,** like a game or a video. Leave full screen first.
+
+## Updates
+
+- **"Couldn't check for updates."** The app couldn't reach GitHub. Check your internet connection and try again.
+- **"Couldn't update."** The message says why. You can always download the newest installer from the
+  [releases page](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases) and open it over the copy you have:
+  it keeps your settings.
+- **The portable version "can't replace itself".** It's in a folder you can't write to, like Program Files. Move
+  JaredsWindowsUtils.exe somewhere of your own, like your Documents folder, or download the new version by hand.

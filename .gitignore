@@ -1,0 +1,12 @@
+bin/
+obj/
+out/
+artifacts/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+TestResults/
+docs/ideas/
+trial/

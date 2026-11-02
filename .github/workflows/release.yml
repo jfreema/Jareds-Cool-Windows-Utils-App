@@ -1,0 +1,115 @@
+name: Release
+
+# Every push to main that changes the app publishes it as a new version on GitHub Releases: this tests and builds it,
+# tries it on Windows (scripts/try-on-windows.ps1), then publishes the installer, the portable exe and release.json,
+# which is where Check for Updates looks. The last number of the version goes up by itself, unless the push raised the
+# version in Directory.Build.props, as for a new feature. Run it by hand from the Actions tab to try a build without
+# publishing.
+
+on:
+  push:
+    branches: [main]
+    # The app's own files. Docs, tests and the art scripts alone don't make a new version.
+    paths: [src/**, installer/**, Directory.Build.props, scripts/build.ps1]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish, if the app changed since the last release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # A push builds main as it is now, so a run that waited for the one before takes in every push since
+          ref: ${{ github.event_name == 'push' && 'main' || github.ref }}
+          fetch-depth: 0  # for the tags, which say what's published
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pick the version
+        id: version
+        run: |
+          [xml] $props = Get-Content Directory.Build.props
+          $base = $props.Project.PropertyGroup.Version
+          $last = git tag --list 'v*' --sort=-v:refname | Select-Object -First 1
+          $changed = $true
+          if (-not $last) {
+            $next = $base
+            "Nothing published yet: $next"
+          } else {
+            $published = $last.TrimStart('v')
+            # Whether the app changed since the published version was built
+            git diff --quiet $last HEAD -- src installer Directory.Build.props scripts/build.ps1
+            $changed = $LASTEXITCODE -ne 0
+            # A version raised by hand, as for a new feature, goes out as it is. Otherwise the last number goes up.
+            if ([version] $base -gt [version] $published) {
+              $next = $base
+            } else {
+              $parts = $published.Split('.')
+              $next = "$($parts[0]).$($parts[1]).$([int] $parts[2] + 1)"
+            }
+            "Directory.Build.props says $base, $published is published, and the app changed since: $changed"
+          }
+          $publish = $changed -and ('${{ github.event_name }}' -eq 'push' -or '${{ inputs.publish }}' -eq 'true')
+          if ($publish) { "Publishing $next" } elseif ($changed) { "Publishing would make it $next" }
+          "version=$next" >> $env:GITHUB_OUTPUT
+          "publish=$($publish.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          "last=$last" >> $env:GITHUB_OUTPUT
+          "source=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Build
+        run: |
+          scripts/build.ps1 -Version ${{ steps.version.outputs.version }}
+          # A newer version for Check for Updates to find in the trial
+          scripts/build.ps1 -Version 99.0.0 -Out out-newer -DownloadUrl http://127.0.0.1:8765
+
+      - name: Try it
+        run: scripts/try-on-windows.ps1
+
+      - name: Keep what the trial found
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trial-${{ steps.version.outputs.version }}
+          path: trial
+
+      - name: Publish
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $last = '${{ steps.version.outputs.last }}'
+          $range = if ($last) { "$last..HEAD" } else { "HEAD" }
+          $changes = git log --format='- %s' $range -- src installer Directory.Build.props scripts/build.ps1
+          $notes = @(
+            "**Install:** download JaredsWindowsUtils-Setup.exe and open it. Already installed? Use Check for Updates in the menu."
+            ""
+            "**Or run it without installing:** download JaredsWindowsUtils.exe and open it from any folder."
+            ""
+            "### What's new"
+            $changes
+          ) -join "`n"
+          Set-Content out/notes.md $notes -Encoding utf8NoBOM
+          gh release create "v$version" out/JaredsWindowsUtils-Setup.exe out/JaredsWindowsUtils.exe out/release.json `
+            --target '${{ steps.version.outputs.source }}' --title $version --notes-file out/notes.md

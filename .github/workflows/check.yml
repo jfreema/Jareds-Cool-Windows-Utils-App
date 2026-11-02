@@ -1,0 +1,61 @@
+name: Check
+
+# Every push to a branch other than main: tests, builds and tries the app on Windows, as the Release workflow does
+# before it publishes, and publishes nothing. On claude/ branches it then commits what the trial found (trial/: the
+# self-test's pictures, results and logs) to the branch, since Claude's cloud machines can't download a run's
+# artifacts.
+
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore: [trial/**]
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Build
+        run: |
+          [xml] $props = Get-Content Directory.Build.props
+          scripts/build.ps1 -Version $props.Project.PropertyGroup.Version
+          scripts/build.ps1 -Version 99.0.0 -Out out-newer -DownloadUrl http://127.0.0.1:8765
+
+      - name: Try it
+        run: scripts/try-on-windows.ps1
+
+      - name: Keep what the trial found
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trial
+          path: trial
+
+      - name: Commit what the trial found
+        if: always() && startsWith(github.ref_name, 'claude/')
+        shell: bash
+        run: |
+          # How the run went, there even when it stopped before the trial, so that every run commits something
+          mkdir -p trial
+          echo "${{ job.status }} https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" > trial/job.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f trial
+          git commit -q -m "Trial of ${GITHUB_SHA::7} [skip ci]" || exit 0
+          git pull -q --rebase origin "$GITHUB_REF_NAME"
+          git push -q origin "HEAD:$GITHUB_REF_NAME"
