@@ -6,9 +6,10 @@ Notes for any coding agent working on Jared's Cool Windows Utilities App.
 
 The Windows version of [Jared's Cool Mac Utilities App](https://github.com/jfreema/Jareds-Cool-Mac-Utils-App): a tray
 app with the same bubble pop menu, getting the Mac app's features one at a time. [docs/roadmap.md](docs/roadmap.md)
-tracks which are done: tick items off there as they ship. Jared asked for 0.2.0 to follow 0.1.0 straight away; check
-with him before starting the phases after it. 0.1.0 has window snapping and 0.2.0 the screenshot tool. It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub Releases as an installer
-and a portable exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
+tracks which are done: tick items off there as they ship. 0.1.0 has window snapping and 0.2.0 the screenshot tool.
+Jared asked for 0.2.0 to follow 0.1.0 straight away, and for 0.3.0 to wait until he has tried 0.2.0; check with him
+before starting each phase after that. It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub
+Releases as an installer and a portable exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
 
 The Mac app is the reference for how a feature behaves and looks. Port its logic into pure, tested C# rather than
 reinventing it, and keep its labels, with the shortcuts spelled out as Windows writes them: "Win+Alt+arrow keys".

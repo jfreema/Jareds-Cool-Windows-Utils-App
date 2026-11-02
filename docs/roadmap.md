@@ -17,8 +17,8 @@ before the next one starts. This is Jared's plan from November 2, 2026. Tick ite
 pointer on it), Show Hidden Icons (the **^** in the taskbar's corner) and the Mac's lock shortcut (Windows key+L).
 
 Each phase ends with a release that Jared installs and tries. He asked on November 2, 2026 for 0.2.0 to follow 0.1.0
-straight away, without waiting for his tryout. Within a phase, fixes go out as 0.x.1, 0.x.2 and so on (see
-[AGENTS.md](../AGENTS.md#versioning)).
+straight away, without waiting for his tryout, and then for 0.3.0 to wait until he has tried 0.2.0. Within a phase,
+fixes go out as 0.x.1, 0.x.2 and so on (see [AGENTS.md](../AGENTS.md#versioning)).
 
 ## 0.1.0: Window snapping
 
