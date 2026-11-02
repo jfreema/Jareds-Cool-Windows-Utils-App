@@ -32,6 +32,10 @@ sealed class Shortcuts : IDisposable
     uint threadId;
     IntPtr hook;
     volatile bool isWatching;
+    /// <summary>Keys taken from whatever has the focus, and where they go instead</summary>
+    volatile Grabbed? grabbed;
+
+    sealed record Grabbed(IReadOnlySet<uint> Keys, Action<uint> Pressed);
 
     public Shortcuts(Dispatcher dispatcher)
     {
@@ -48,6 +52,12 @@ sealed class Shortcuts : IDisposable
     public void Add(uint key, Action action) => actions[key] = action;
 
     public void Remove(uint key) => actions.TryRemove(key, out _);
+
+    /// <summary>Until Release, those keys go to the app, whatever window has the focus, and nowhere else: the screen
+    /// picker's Esc and Space, which mustn't reach the app you were in if Windows kept the focus there</summary>
+    public void Grab(IReadOnlySet<uint> keys, Action<uint> pressed) => grabbed = new Grabbed(keys, pressed);
+
+    public void Release() => grabbed = null;
 
     /// <summary>Puts the hook back in, in case Windows took it out</summary>
     public void Rehook()
@@ -109,6 +119,11 @@ sealed class Shortcuts : IDisposable
             {
                 if ((int)wParam is WM_KEYDOWN or WM_SYSKEYDOWN)
                 {
+                    if (grabbed is { } grab && grab.Keys.Contains(key.vkCode))
+                    {
+                        if (held.Add(key.vkCode)) dispatcher.InvokeAsync(() => grab.Pressed(key.vkCode));
+                        return new IntPtr(1);
+                    }
                     if (actions.TryGetValue(key.vkCode, out var action) && IsChordHeld())
                     {
                         // One press, one action: held down, a key repeats

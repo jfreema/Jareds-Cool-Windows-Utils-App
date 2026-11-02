@@ -8,6 +8,10 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Snipping;
 
+/// <summary>A display, in screen pixels, and its pixels per point: 1 at 100%, 1.5 at 150%</summary>
+/// <param name="Visible">Without the taskbar</param>
+readonly record struct SnipDisplay(RectD Bounds, RectD Visible, double Scale);
+
 /// <summary>The screen as it is, every display, in real pixels, and the windows on it</summary>
 static class ScreenCapture
 {
@@ -85,6 +89,10 @@ static class ScreenCapture
         }, IntPtr.Zero);
         return frames;
     }
+
+    public static List<SnipDisplay> Displays() =>
+        Snapping.Displays.All().Select(monitor => new SnipDisplay(monitor.Frame, monitor.Visible,
+            GetDpiForMonitor(monitor.Handle, 0, out uint dpi, out _) == 0 && dpi > 0 ? dpi / 96.0 : 1)).ToList();
 
     /// <summary>The display's pixels per point there: 1 at 100%, 1.5 at 150%</summary>
     public static double ScaleAt(PointD point) =>

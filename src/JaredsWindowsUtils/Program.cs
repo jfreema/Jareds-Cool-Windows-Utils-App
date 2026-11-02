@@ -63,6 +63,8 @@ static class Program
             return 0;
         }
         if (args.Contains("--test-window")) return TestWindow.Run(fixedSize: args.Contains("fixed"));
+        if (Array.IndexOf(args, "--press") is var press and >= 0 && press + 1 < args.Length)
+            return SelfTest.PressShortcut(args[press + 1]);
 
         var options = Options.Parse(args);
         using var mutex = new Mutex(false, MutexName);

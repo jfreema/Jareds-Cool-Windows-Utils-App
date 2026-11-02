@@ -20,11 +20,15 @@ sealed class Updater
 
     readonly Settings settings;
     readonly Action quit;
+    readonly Func<bool> readyToQuit;
 
-    public Updater(Settings settings, Action quit)
+    /// <param name="readyToQuit">Asks about snips that haven't been saved, since an update restarts the app. False to
+    /// wait.</param>
+    public Updater(Settings settings, Action quit, Func<bool> readyToQuit)
     {
         this.settings = settings;
         this.quit = quit;
+        this.readyToQuit = readyToQuit;
     }
 
     public bool IsBusy { get; private set; }
@@ -86,6 +90,7 @@ sealed class Updater
         if (askFirst && !BubbleDialog.Confirm($"{AppInfo.Name} {release.Version} is available",
                 $"You have {current}. {AppInfo.Name} restarts on the new version when it's done.", "Update"))
             return;
+        if (!readyToQuit()) return;
         try
         {
             if (AppInfo.IsInstalled) await Install(release);

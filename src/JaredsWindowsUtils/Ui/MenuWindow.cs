@@ -9,15 +9,16 @@ using static JaredsWindowsUtils.Interop.Native;
 namespace JaredsWindowsUtils.Ui;
 
 /// <summary>A switch in the menu</summary>
-enum MenuToggle { OpenAtLogin, SnapWindows, SnapThirds }
+enum MenuToggle { OpenAtLogin, SnapWindows, SnapThirds, SnipScreen }
 
 /// <summary>What a button in the menu does</summary>
 enum MenuCommand { ShowAbout, CheckForUpdates, Quit }
 
 /// <summary>What the menu shows</summary>
 /// <param name="SnapNote">Why the shortcuts didn't take, under the switch</param>
-sealed record MenuState(bool OpenAtLogin, bool SnapWindows, bool SnapThirds, string? SnapNote,
-    bool IsCheckingForUpdates);
+/// <param name="SnipNote">Why Win+Alt+P didn't take, under its switch</param>
+sealed record MenuState(bool OpenAtLogin, bool SnapWindows, bool SnapThirds, string? SnapNote, bool SnipScreen,
+    string? SnipNote, bool IsCheckingForUpdates);
 
 /// <summary>The tray icon's menu, drawn in the bubble pop style like the Mac app's. It behaves like a menu: it opens
 /// beside the icon, and closes on a click elsewhere, Esc, or a second click on the icon. Switches stay put when flipped,
@@ -39,6 +40,9 @@ sealed class MenuWindow : Window
     };
     readonly Strip snapNote;
     readonly TextBlock snapNoteText;
+    readonly ToggleRow snipScreen = new("Snip the Screen with Win+Alt+P", showsDivider: false);
+    readonly Strip snipNote;
+    readonly TextBlock snipNoteText;
     readonly BubbleButton checkForUpdates = new("Check for Updates");
     RECT anchor;
     bool closing;
@@ -64,27 +68,14 @@ sealed class MenuWindow : Window
         openAtLogin.Toggled += on => Toggled?.Invoke(MenuToggle.OpenAtLogin, on);
         snapWindows.Toggled += on => Toggled?.Invoke(MenuToggle.SnapWindows, on);
         snapThirds.Toggled += on => Toggled?.Invoke(MenuToggle.SnapThirds, on);
-
-        snapNoteText = new TextBlock
-        {
-            FontFamily = Bubble.Body,
-            FontSize = 12,
-            Foreground = Bubble.WithOpacity(Bubble.Ink, 0.75),
-            TextWrapping = TextWrapping.Wrap,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        var note = new DockPanel();
-        var warning = new GlyphIcon { Kind = GlyphKind.Warning, Brush = Bubble.Orange, Size = 12 };
-        warning.Margin = new Thickness(0, 0, 8, 0);
-        warning.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(warning, Dock.Left);
-        note.Children.Add(warning);
-        note.Children.Add(snapNoteText);
-        snapNote = new Strip { Child = note, Visibility = Visibility.Collapsed };
+        snipScreen.Toggled += on => Toggled?.Invoke(MenuToggle.SnipScreen, on);
+        (snapNote, snapNoteText) = Note();
+        (snipNote, snipNoteText) = Note();
 
         var content = new StackPanel { Margin = new Thickness(12) };
         content.Children.Add(Header());
         content.Children.Add(Section("Window Snapping", Card(snapWindows, SnapOptions(), snapNote)));
+        content.Children.Add(Section("Screenshots", Card(snipScreen, snipNote), spaceAbove: true));
         content.Children.Add(Footer());
 
         Content = new MenuSurface
@@ -149,6 +140,9 @@ sealed class MenuWindow : Window
         snapThirds.IsEnabled = state.SnapWindows;
         snapNoteText.Text = state.SnapNote ?? "";
         snapNote.Visibility = state.SnapNote == null ? Visibility.Collapsed : Visibility.Visible;
+        snipScreen.IsOn = state.SnipScreen;
+        snipNoteText.Text = state.SnipNote ?? "";
+        snipNote.Visibility = state.SnipNote == null ? Visibility.Collapsed : Visibility.Visible;
         checkForUpdates.Text = state.IsCheckingForUpdates ? "Checking…" : "Check for Updates";
         checkForUpdates.IsEnabled = !state.IsCheckingForUpdates;
     }
@@ -232,9 +226,10 @@ sealed class MenuWindow : Window
         return header;
     }
 
-    static FrameworkElement Section(string title, FrameworkElement content)
+    /// <param name="spaceAbove">Below another section: 11 below its card, as on the Mac, less the card's shadow room</param>
+    static FrameworkElement Section(string title, FrameworkElement content, bool spaceAbove = false)
     {
-        var section = new StackPanel();
+        var section = new StackPanel { Margin = new Thickness(0, spaceAbove ? 8 : 0, 0, 0) };
         var label = new SpacedText { Text = title };
         label.Margin = new Thickness(0, 0, 0, 5);
         label.HorizontalAlignment = HorizontalAlignment.Left;
@@ -249,6 +244,27 @@ sealed class MenuWindow : Window
         var stack = new StackPanel();
         foreach (var row in rows) stack.Children.Add(row);
         return new BubbleCard { Child = stack, Margin = new Thickness(0, 0, 2, 3) };
+    }
+
+    /// <summary>A note under a switch, with a warning sign, hidden until there's something to say</summary>
+    static (Strip Strip, TextBlock Text) Note()
+    {
+        var text = new TextBlock
+        {
+            FontFamily = Bubble.Body,
+            FontSize = 12,
+            Foreground = Bubble.WithOpacity(Bubble.Ink, 0.75),
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var note = new DockPanel();
+        var warning = new GlyphIcon { Kind = GlyphKind.Warning, Brush = Bubble.Orange, Size = 12 };
+        warning.Margin = new Thickness(0, 0, 8, 0);
+        warning.VerticalAlignment = VerticalAlignment.Center;
+        DockPanel.SetDock(warning, Dock.Left);
+        note.Children.Add(warning);
+        note.Children.Add(text);
+        return (new Strip { Child = note, Visibility = Visibility.Collapsed }, text);
     }
 
     FrameworkElement SnapOptions()

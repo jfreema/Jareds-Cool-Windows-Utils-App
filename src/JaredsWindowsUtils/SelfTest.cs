@@ -17,7 +17,7 @@ namespace JaredsWindowsUtils;
 /// <summary>--self-test &lt;folder&gt;: tries the real app on this machine, as GitHub's Windows runners do for every
 /// change, since the app can't run where it's written. Takes pictures of the menu and dialogs, snaps a test window
 /// from another process around the screen, and writes report.json. Exits 1 if anything failed.</summary>
-static class SelfTest
+static partial class SelfTest
 {
     sealed record Result(string Name, bool Passed, string Details);
 
@@ -88,6 +88,7 @@ static class SelfTest
 
             await Snapping(app, folder, Add, facts);
             await NoMenus(folder, Add, facts);
+            await Snipping(app, folder, Add, facts);
         }
         catch (Exception exception)
         {
@@ -353,6 +354,18 @@ static class SelfTest
         Send([.. keys.Select(k => Key(k, false))]);
         await Task.Delay(120);
         Send([.. keys.Reverse().Select(k => Key(k, true))]);
+    }
+
+    /// <summary>--press &lt;letter&gt;: Win+Alt and the letter, pressed from a process of its own, as the keyboard
+    /// does while you're in another app</summary>
+    public static int PressShortcut(string key)
+    {
+        if (key.Length != 1 || !char.IsAsciiLetter(key[0])) return 1;
+        ushort code = char.ToUpperInvariant(key[0]);
+        Send([Key(VK_LWIN, false), Key(VK_MENU, false), Key(code, false)]);
+        Thread.Sleep(120);
+        Send([Key(code, true), Key(VK_MENU, true), Key(VK_LWIN, true)]);
+        return 0;
     }
 
     static INPUT Key(ushort key, bool up) => new()
