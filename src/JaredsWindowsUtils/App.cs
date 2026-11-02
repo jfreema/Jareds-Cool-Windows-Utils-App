@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using JaredsWindowsUtils.Core;
 using JaredsWindowsUtils.Interop;
 using JaredsWindowsUtils.Snapping;
+using JaredsWindowsUtils.Snipping;
 using JaredsWindowsUtils.Tray;
 using JaredsWindowsUtils.Ui;
 using static JaredsWindowsUtils.Interop.Native;
@@ -21,6 +22,7 @@ sealed class App : Application
     TrayIcon tray = null!;
     Shortcuts shortcuts = null!;
     WindowSnapper snapper = null!;
+    ScreenSnipper snipper = null!;
     Updater updater = null!;
     MenuWindow? menu;
     /// <summary>When the menu last closed, by Environment.TickCount64</summary>
@@ -35,6 +37,7 @@ sealed class App : Application
     }
 
     internal WindowSnapper Snapper => snapper;
+    internal ScreenSnipper Snipper => snipper;
     internal TrayIcon Tray => tray;
     internal MenuWindow? Menu => menu;
 
@@ -55,7 +58,10 @@ sealed class App : Application
         snapper = new WindowSnapper(settings, shortcuts);
         snapper.Changed += RefreshMenu;
         snapper.Start();
-        updater = new Updater(settings, Quit);
+        snipper = new ScreenSnipper(settings, shortcuts);
+        snipper.Changed += RefreshMenu;
+        snipper.Start();
+        updater = new Updater(settings, Quit, ReadyToQuit);
         updater.BusyChanged += RefreshMenu;
         tray = new TrayIcon(messages);
         tray.Clicked += ToggleMenu;
@@ -130,7 +136,9 @@ sealed class App : Application
             return;
         }
         // Puts the keyboard hook back in, in case Windows took it out
+        shortcuts.Rehook();
         snapper.Refresh();
+        snipper.Refresh();
         var window = new MenuWindow();
         window.Toggled += Flip;
         window.Command += Run;
@@ -155,6 +163,10 @@ sealed class App : Application
         SnapThirds: snapper.UsesThirds,
         SnapNote: snapper.Status == WindowSnapper.State.Unavailable
             ? "Windows didn't let the app watch for Win+Alt+arrow keys"
+            : null,
+        SnipScreen: snipper.IsEnabled,
+        SnipNote: snipper.Status == ScreenSnipper.State.Unavailable
+            ? "Windows didn't let the app watch for Win+Alt+P"
             : null,
         IsCheckingForUpdates: updater.IsBusy);
 
@@ -194,6 +206,9 @@ sealed class App : Application
             case MenuToggle.SnapThirds:
                 snapper.SetUsesThirds(on);
                 break;
+            case MenuToggle.SnipScreen:
+                snipper.SetEnabled(on);
+                break;
         }
         // Back to how things are, if the feature didn't take it
         RefreshMenu();
@@ -211,10 +226,23 @@ sealed class App : Application
                 updater.CheckForUpdates();
                 break;
             case MenuCommand.Quit:
-                Quit();
+                if (ReadyToQuit()) Quit();
                 break;
         }
     });
+
+    /// <summary>Snips with shapes that haven't been copied or saved get a chance first, before Quit or an update. True
+    /// to go ahead.</summary>
+    bool ReadyToQuit()
+    {
+        int unsaved = snipper.Editors.Unsaved;
+        if (unsaved == 0) return true;
+        if (!BubbleDialog.Confirm(unsaved == 1 ? "Quit without saving your snip?" : $"Quit without saving {unsaved} snips?",
+                "Shapes you haven't copied or saved will be lost.", "Quit", "Cancel"))
+            return false;
+        snipper.Editors.Discard();
+        return true;
+    }
 
     public void Quit()
     {
@@ -222,6 +250,7 @@ sealed class App : Application
         hasQuit = true;
         menu?.Dismiss();
         tray.Dispose();
+        snipper.Dispose();
         snapper.Dispose();
         shortcuts.Dispose();
         messages.Dispose();
@@ -235,6 +264,7 @@ sealed class App : Application
         {
             hasQuit = true;
             tray.Dispose();
+            snipper.Dispose();
             snapper.Dispose();
             shortcuts.Dispose();
             messages.Dispose();

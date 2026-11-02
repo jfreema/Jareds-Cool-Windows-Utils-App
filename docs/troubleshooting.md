@@ -36,6 +36,23 @@ open the folder. The log says what the app did and why something didn't work.
   centers those on the column and keeps them on the display.
 - **A full-screen window doesn't move,** like a game or a video. Leave full screen first.
 
+## Screenshot tool
+
+- **Win+Alt+P does nothing.** Make sure **Snip the Screen with Win+Alt+P** is on in the menu. If the menu says
+  **Windows didn't let the app watch for Win+Alt+P**, security software may be blocking it, as for window snapping.
+  Opening the menu tries again.
+- **Win+Alt+P does nothing while an app run as administrator is in front.** Windows doesn't let other apps see the keys
+  you press in it. Click another window first.
+- **PowerToys shows crosshairs instead.** PowerToys' Mouse Pointer Crosshairs also uses Win+Alt+P when it's turned on.
+  The app usually gets the shortcut first, but to keep both, give the crosshairs another shortcut in PowerToys.
+- **Copy Text says Windows can't read text in your language.** Copy Text uses Windows' own text recognition, which comes
+  with a language's optional features. Open **Settings → Time & language → Language & region**, click **…** beside your
+  language, choose **Language options**, and add **Optical character recognition** if it's offered.
+- **Copy Text finds no text.** Very small or faint text can be too hard to read. Zoom in on it first, or snip a little
+  more around it.
+- **Closing the editor asks whether to save.** It does when there are shapes you haven't copied or saved. Choose
+  **Don't Save** to close it anyway. Quitting the app asks once for all of them.
+
 ## Updates
 
 - **"Couldn't check for updates."** The app couldn't reach GitHub. Check your internet connection and try again.

@@ -17,7 +17,7 @@ namespace JaredsWindowsUtils;
 /// <summary>--self-test &lt;folder&gt;: tries the real app on this machine, as GitHub's Windows runners do for every
 /// change, since the app can't run where it's written. Takes pictures of the menu and dialogs, snaps a test window
 /// from another process around the screen, and writes report.json. Exits 1 if anything failed.</summary>
-static class SelfTest
+static partial class SelfTest
 {
     sealed record Result(string Name, bool Passed, string Details);
 
@@ -88,6 +88,7 @@ static class SelfTest
 
             await Snapping(app, folder, Add, facts);
             await NoMenus(folder, Add, facts);
+            await Snipping(app, folder, Add, facts);
         }
         catch (Exception exception)
         {
@@ -306,14 +307,25 @@ static class SelfTest
         window.Close();
     }
 
-    /// <summary>The window's content drawn at a scale, see-through around its rounded corners</summary>
+    /// <summary>The window's content and its margin drawn at a scale, see-through around its rounded corners. Content
+    /// away from the window's corner, like the toast's centered card, is drawn where it is in the window, so it's drawn
+    /// through a brush that picks it out.</summary>
     static BitmapSource Render(Window window, double scale)
     {
         var content = (FrameworkElement)window.Content;
-        var size = new Size(content.ActualWidth, content.ActualHeight);
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(size.Width * scale), (int)Math.Ceiling(size.Height * scale),
+        var margin = content.Margin;
+        var corner = VisualTreeHelper.GetOffset(content);
+        var area = new Rect(corner.X - margin.Left, corner.Y - margin.Top,
+            content.ActualWidth + margin.Left + margin.Right, content.ActualHeight + margin.Top + margin.Bottom);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(area.Width * scale), (int)Math.Ceiling(area.Height * scale),
             96 * scale, 96 * scale, PixelFormats.Pbgra32);
-        bitmap.Render(content);
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen())
+        {
+            var brush = new VisualBrush(content) { Viewbox = area, ViewboxUnits = BrushMappingMode.Absolute };
+            context.DrawRectangle(brush, null, new Rect(area.Size));
+        }
+        bitmap.Render(drawing);
         return bitmap;
     }
 
@@ -353,6 +365,18 @@ static class SelfTest
         Send([.. keys.Select(k => Key(k, false))]);
         await Task.Delay(120);
         Send([.. keys.Reverse().Select(k => Key(k, true))]);
+    }
+
+    /// <summary>--press &lt;letter&gt;: Win+Alt and the letter, pressed from a process of its own, as the keyboard
+    /// does while you're in another app</summary>
+    public static int PressShortcut(string key)
+    {
+        if (key.Length != 1 || !char.IsAsciiLetter(key[0])) return 1;
+        ushort code = char.ToUpperInvariant(key[0]);
+        Send([Key(VK_LWIN, false), Key(VK_MENU, false), Key(code, false)]);
+        Thread.Sleep(120);
+        Send([Key(code, true), Key(VK_MENU, true), Key(VK_LWIN, true)]);
+        return 0;
     }
 
     static INPUT Key(ushort key, bool up) => new()

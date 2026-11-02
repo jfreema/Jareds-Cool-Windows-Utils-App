@@ -100,12 +100,15 @@ class BubbleWindow : Window
     }
 }
 
-/// <summary>The app's alerts: a title, a message, and a button or two</summary>
+/// <summary>The app's alerts: a title, a message, and a few buttons. The first is the default, in yellow, and the
+/// last, if there's more than one, is what Esc does.</summary>
 sealed class BubbleDialog : BubbleWindow
 {
-    bool confirmed;
+    readonly List<BubbleButton> buttons = [];
+    /// <summary>The button clicked, or -1 for Esc</summary>
+    int choice = -1;
 
-    BubbleDialog(string title, string message, string button, string? cancel) : base(title)
+    BubbleDialog(string title, string message, string[] choices) : base(title)
     {
         var heading = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
         var icon = IconImage(40);
@@ -117,18 +120,17 @@ sealed class BubbleDialog : BubbleWindow
         titleText.VerticalAlignment = VerticalAlignment.Center;
         heading.Children.Add(titleText);
 
-        var primary = new BubbleButton(button) { Fill = Bubble.Yellow, IsDefault = true };
-        primary.Click += (_, _) =>
+        for (int index = 0; index < choices.Length; index++)
         {
-            confirmed = true;
-            Close();
-        };
-        var buttons = new List<BubbleButton> { primary };
-        if (cancel != null)
-        {
-            var secondary = new BubbleButton(cancel) { IsCancel = true };
-            secondary.Click += (_, _) => Close();
-            buttons.Add(secondary);
+            int picked = index;
+            var button = new BubbleButton(choices[index])
+            {
+                Fill = index == 0 ? Bubble.Yellow : Bubble.White,
+                IsDefault = index == 0,
+                IsCancel = index > 0 && index == choices.Length - 1,
+            };
+            button.Click += (_, _) => Pick(picked);
+            buttons.Add(button);
         }
 
         var body = new StackPanel();
@@ -136,23 +138,44 @@ sealed class BubbleDialog : BubbleWindow
         if (message.Length > 0) body.Children.Add(MessageCard(new Run(message)));
         body.Children.Add(ButtonRow([.. buttons]));
         SetBody(body, 380);
-        Loaded += (_, _) => primary.Focus();
+        Loaded += (_, _) => buttons[0].Focus();
+    }
+
+    /// <summary>As if that button were clicked: for the self-test</summary>
+    internal void Pick(int index)
+    {
+        choice = index;
+        Close();
+    }
+
+    /// <summary>Over a window of the app's, which waits for it</summary>
+    void Own(Window? owner)
+    {
+        if (owner == null || !owner.IsVisible) return;
+        Owner = owner;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Topmost = false;
     }
 
     /// <summary>Waits for OK</summary>
     public static void Show(string title, string message) =>
-        new BubbleDialog(title, message, "OK", null).ShowDialog();
+        new BubbleDialog(title, message, ["OK"]).ShowDialog();
 
     /// <summary>For the self-test's pictures</summary>
     internal static BubbleDialog Create(string title, string message, string button, string? cancel) =>
-        new(title, message, button, cancel);
+        new(title, message, cancel == null ? [button] : [button, cancel]);
 
     /// <summary>True for the button, false for Not Now or Esc</summary>
-    public static bool Confirm(string title, string message, string button, string cancel = "Not Now")
+    public static bool Confirm(string title, string message, string button, string cancel = "Not Now") =>
+        Choose(null, title, message, button, cancel) == 0;
+
+    /// <summary>Which button was clicked, from 0, or -1 for Esc. Waits for it.</summary>
+    public static int Choose(Window? owner, string title, string message, params string[] choices)
     {
-        var dialog = new BubbleDialog(title, message, button, cancel);
+        var dialog = new BubbleDialog(title, message, choices);
+        dialog.Own(owner);
         dialog.ShowDialog();
-        return dialog.confirmed;
+        return dialog.choice;
     }
 }
 

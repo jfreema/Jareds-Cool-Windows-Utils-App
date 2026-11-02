@@ -68,6 +68,20 @@ function Save-Log([string] $name) {
     if (Test-Path "$data\log.txt") { Copy-Item "$data\log.txt" (Join-Path $Results "$name-log.txt") }
 }
 
+# What the app has logged, read without getting in the way of its next line
+function Get-Log {
+    try {
+        $stream = [IO.File]::Open("$data\log.txt", "Open", "Read", "ReadWrite, Delete")
+        try { [IO.StreamReader]::new($stream).ReadToEnd() } finally { $stream.Dispose() }
+    } catch { "" }
+}
+
+# Whether a copy of the version has started since the log was cleared. A process that's only just begun hasn't taken
+# the app's mutex yet, so asking it to quit then finds nothing to quit, and it carries on.
+function Test-Started([string] $version) {
+    (Get-Log).Contains("Started $version from")
+}
+
 function Stop-Copy([string] $path) {
     $quit = Start-Process $path -ArgumentList "--quit" -PassThru
     $quit.WaitForExit(30000) | Out-Null
@@ -112,10 +126,13 @@ try {
     $shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Jared's Windows App.lnk"
     Check "Start menu shortcut" (Test-Path -LiteralPath $shortcut) $shortcut
     Start-Process $installed -ArgumentList "--update-now" | Out-Null
-    $updated = Wait-Until 240 { (Get-Stamped $installed) -eq "99.0.0" -and @(Get-Running $installed).Count -eq 1 }
+    $updated = Wait-Until 240 {
+        (Get-Stamped $installed) -eq "99.0.0" -and @(Get-Running $installed).Count -eq 1 -and (Test-Started "99.0.0")
+    }
     Check "installed copy updates itself and restarts" $updated "now $(Get-Stamped $installed)"
+    $quit = Stop-Copy $installed
     Save-Log "installed"
-    Check "installed copy quits when asked" (Stop-Copy $installed)
+    Check "installed copy quits when asked" $quit
 
     # 3. A portable copy
     if (Test-Path "$data\log.txt") { Remove-Item "$data\log.txt" }
@@ -125,16 +142,20 @@ try {
     $portable = Join-Path $folder "JaredsWindowsUtils.exe"
     Copy-Item "$Out\JaredsWindowsUtils.exe" $portable
     Start-Process $portable -ArgumentList "--update-now" | Out-Null
-    $updated = Wait-Until 240 { (Get-Stamped $portable) -eq "99.0.0" -and @(Get-Running $portable).Count -eq 1 }
+    $updated = Wait-Until 240 {
+        (Get-Stamped $portable) -eq "99.0.0" -and @(Get-Running $portable).Count -eq 1 -and (Test-Started "99.0.0")
+    }
     Check "portable copy updates itself and restarts" $updated "now $(Get-Stamped $portable)"
     Check "portable copy removes the old one" (Wait-Until 30 { -not (Test-Path "$portable.old") })
+    $quit = Stop-Copy $portable
     Save-Log "portable"
-    Check "portable copy quits when asked" (Stop-Copy $portable)
+    Check "portable copy quits when asked" $quit
 
     # 4. The uninstaller, with Open at Login on
     Set-ItemProperty $runKey -Name JaredsWindowsUtils -Value "`"$installed`" --login"
+    if (Test-Path "$data\log.txt") { Remove-Item "$data\log.txt" }
     Start-Process $installed | Out-Null
-    Wait-Until 20 { @(Get-Running $installed).Count -eq 1 } | Out-Null
+    Check "installed copy starts" (Wait-Until 30 { @(Get-Running $installed).Count -eq 1 -and (Test-Started "99.0.0") })
     $uninstaller = Join-Path (Split-Path $installed) "unins000.exe"
     Start-Process $uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" | Out-Null
     Check "uninstaller removes the app" (Wait-Until 120 { -not (Test-Path $installed) })

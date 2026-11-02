@@ -63,6 +63,8 @@ static class Program
             return 0;
         }
         if (args.Contains("--test-window")) return TestWindow.Run(fixedSize: args.Contains("fixed"));
+        if (Array.IndexOf(args, "--press") is var press and >= 0 && press + 1 < args.Length)
+            return SelfTest.PressShortcut(args[press + 1]);
 
         var options = Options.Parse(args);
         using var mutex = new Mutex(false, MutexName);
@@ -91,8 +93,7 @@ static class Program
         if (options.Replace || running is { } copy && AppVersion.Compare(AppInfo.Version, copy.Version) > 0)
         {
             Log.Info("app", $"Taking over from {running?.Version ?? "the copy that's quitting"}");
-            if (running is { } old) PostMessage(old.Window, QuitMessage, IntPtr.Zero, IntPtr.Zero);
-            if (Wait(mutex, 20_000)) return true;
+            if (AskToQuit(mutex)) return true;
             Log.Error("app", "The running copy didn't quit");
             return false;
         }
@@ -109,12 +110,31 @@ static class Program
     static bool QuitRunningCopy()
     {
         using var mutex = new Mutex(false, MutexName);
-        if (!Wait(mutex, 0))
+        if (!AskToQuit(mutex))
         {
-            if (RunningCopy() is { } copy) PostMessage(copy.Window, QuitMessage, IntPtr.Zero, IntPtr.Zero);
-            if (!Wait(mutex, 20_000)) return false;
+            Log.Error("app", "The running copy didn't quit when asked");
+            return false;
         }
         mutex.ReleaseMutex();
+        return true;
+    }
+
+    /// <summary>Asks the copy holding the mutex to quit, and takes the mutex once it has, within 20 seconds. A copy
+    /// that's just starting may not have its window yet, so it's asked as soon as it has one.</summary>
+    static bool AskToQuit(Mutex mutex)
+    {
+        var asked = IntPtr.Zero;
+        long deadline = Environment.TickCount64 + 20_000;
+        while (!Wait(mutex, 0))
+        {
+            if (RunningCopy() is { } copy && copy.Window != asked)
+            {
+                PostMessage(copy.Window, QuitMessage, IntPtr.Zero, IntPtr.Zero);
+                asked = copy.Window;
+            }
+            if (Environment.TickCount64 > deadline) return false;
+            Thread.Sleep(100);
+        }
         return true;
     }
 

@@ -69,8 +69,8 @@ sealed class WindowSnapper : IDisposable
         Changed?.Invoke();
     }
 
-    /// <summary>Matches the shortcuts and status to the switch. Run again when the menu opens, which also puts the
-    /// keyboard hook back in, in case Windows took it out.</summary>
+    /// <summary>Matches the shortcuts and status to the switch. Run again when the menu opens, after the keyboard hook
+    /// goes back in, in case Windows took it out.</summary>
     public void Refresh()
     {
         foreach (var (key, action) in ArrowKeys)
@@ -78,7 +78,6 @@ sealed class WindowSnapper : IDisposable
             if (IsEnabled) shortcuts.Add(key, () => Pressed(action));
             else shortcuts.Remove(key);
         }
-        if (IsEnabled) shortcuts.Rehook();
         var next = !IsEnabled ? State.Off : shortcuts.IsWatching ? State.On : State.Unavailable;
         if (next == Status) return;
         Status = next;

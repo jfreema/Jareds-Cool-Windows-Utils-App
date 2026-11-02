@@ -9,7 +9,12 @@ using System.Windows.Media.Animation;
 namespace JaredsWindowsUtils.Ui;
 
 /// <summary>The symbols the Mac app takes from SF Symbols, drawn as paths</summary>
-enum GlyphKind { Bolt, CheckCircle, Circle, Warning, Check }
+enum GlyphKind
+{
+    Bolt, CheckCircle, Circle, Warning, Check,
+    // The snip editor's tools and buttons
+    Box, Line, Arrow, Highlighter, Drop, Letters, Eraser, Undo, Redo,
+}
 
 static class Glyphs
 {
@@ -49,7 +54,84 @@ static class Glyphs
             case GlyphKind.Check:
                 context.DrawGeometry(null, Pen(brush, s * 0.2), Polyline(P(0.2, 0.52), P(0.42, 0.74), P(0.8, 0.3)));
                 break;
+            case GlyphKind.Box:
+                context.DrawRoundedRectangle(null, Pen(brush, s * 0.11), new Rect(P(0.1, 0.22), P(0.9, 0.78)), s * 0.12,
+                    s * 0.12);
+                break;
+            case GlyphKind.Line:
+                context.DrawLine(Pen(brush, s * 0.12), P(0.18, 0.82), P(0.82, 0.18));
+                break;
+            case GlyphKind.Arrow:
+                context.DrawLine(Pen(brush, s * 0.12), P(0.2, 0.8), P(0.78, 0.22));
+                context.DrawGeometry(null, Pen(brush, s * 0.12), Polyline(P(0.38, 0.2), P(0.8, 0.2), P(0.8, 0.62)));
+                break;
+            case GlyphKind.Highlighter:
+                // A marker pointing down to the left, over the line it draws
+                context.PushTransform(new RotateTransform(-45, x + 0.5 * s, y + 0.46 * s));
+                context.DrawRoundedRectangle(brush, null, new Rect(P(0.36, 0.34), P(0.9, 0.58)), s * 0.05, s * 0.05);
+                context.DrawGeometry(brush, null, Polygon(P(0.38, 0.37), P(0.16, 0.42), P(0.16, 0.5), P(0.38, 0.55)));
+                context.Pop();
+                context.DrawLine(Pen(brush, s * 0.1), P(0.1, 0.9), P(0.5, 0.9));
+                break;
+            case GlyphKind.Drop:
+                // A drop, its lower half filled
+                var drop = Drop(P);
+                context.PushClip(new RectangleGeometry(new Rect(P(0, 0.62), P(1, 1))));
+                context.DrawGeometry(brush, null, drop);
+                context.Pop();
+                context.DrawGeometry(null, Pen(brush, s * 0.09), drop);
+                break;
+            case GlyphKind.Letters:
+                var letters = new FormattedText("Aa", System.Globalization.CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, Bubble.DisplayFace, s * 0.66, brush, 1).BuildGeometry(new Point(0, 0));
+                var bounds = letters.Bounds;
+                if (!bounds.IsEmpty)
+                {
+                    context.PushTransform(new TranslateTransform(x + (s - bounds.Width) / 2 - bounds.X,
+                        y + (s - bounds.Height) / 2 - bounds.Y));
+                    context.DrawGeometry(brush, null, letters);
+                    context.Pop();
+                }
+                break;
+            case GlyphKind.Eraser:
+                context.PushTransform(new RotateTransform(-40, x + 0.52 * s, y + 0.48 * s));
+                var block = new Rect(P(0.18, 0.34), P(0.86, 0.62));
+                context.DrawRoundedRectangle(brush, null, new Rect(block.X, block.Y, 0.26 * s, block.Height), s * 0.06,
+                    s * 0.06);
+                context.DrawRoundedRectangle(null, Pen(brush, s * 0.09), block, s * 0.06, s * 0.06);
+                context.Pop();
+                context.DrawLine(Pen(brush, s * 0.09), P(0.36, 0.9), P(0.9, 0.9));
+                break;
+            case GlyphKind.Undo or GlyphKind.Redo:
+                // Mirrored for Redo
+                Point M(double u, double v) => kind == GlyphKind.Undo ? P(u, v) : P(1 - u, v);
+                var turn = new PathFigure { StartPoint = M(0.24, 0.34) };
+                turn.Segments.Add(new LineSegment(M(0.58, 0.34), true));
+                turn.Segments.Add(new ArcSegment(M(0.58, 0.78), new Size(0.22 * s, 0.22 * s), 0, false,
+                    kind == GlyphKind.Undo ? SweepDirection.Clockwise : SweepDirection.Counterclockwise, true));
+                turn.Segments.Add(new LineSegment(M(0.4, 0.78), true));
+                context.DrawGeometry(null, Pen(brush, s * 0.12), new PathGeometry([turn]));
+                context.DrawGeometry(null, Pen(brush, s * 0.12), Polyline(M(0.4, 0.18), M(0.24, 0.34), M(0.4, 0.5)));
+                break;
         }
+    }
+
+    /// <summary>A drop: a circle low in the box, drawn up to a point at the top</summary>
+    static Geometry Drop(Func<double, double, Point> P)
+    {
+        // The circle's center and radius, and where lines from the point touch it
+        double cx = 0.5, cy = 0.62, r = 0.3, top = 0.06;
+        double angle = Math.Acos(r / (cy - top));
+        var right = P(cx + r * Math.Sin(angle), cy - r * Math.Cos(angle));
+        var left = P(cx - r * Math.Sin(angle), cy - r * Math.Cos(angle));
+        var start = P(cx, top);
+        double radius = (right - left).Length / 2 / Math.Sin(angle);
+        var figure = new PathFigure { StartPoint = start, IsClosed = true, IsFilled = true };
+        figure.Segments.Add(new LineSegment(right, true));
+        figure.Segments.Add(new ArcSegment(left, new Size(radius, radius), 0, true, SweepDirection.Clockwise, true));
+        var geometry = new PathGeometry([figure]);
+        geometry.Freeze();
+        return geometry;
     }
 
     static Pen Pen(Brush brush, double width) => new(brush, width)
@@ -137,7 +219,33 @@ class BubbleButton : Button
         }
     }
 
-    public Brush Fill { get; set; } = Bubble.White;
+    Brush fill = Bubble.White;
+    GlyphKind? glyph;
+
+    public Brush Fill
+    {
+        get => fill;
+        set
+        {
+            fill = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>A symbol before the title, or on its own with no title</summary>
+    public GlyphKind? Glyph
+    {
+        get => glyph;
+        set
+        {
+            glyph = value;
+            InvalidateMeasure();
+            InvalidateVisual();
+        }
+    }
+
+    public double GlyphSize { get; set; } = 11;
+    public Brush GlyphBrush { get; set; } = Bubble.Ink;
     public double PillHeight { get; set; } = 26;
     public double TextSize { get; set; } = 12.5;
     /// <summary>Text after the title, dimmed and smaller, like a shortcut</summary>
@@ -157,9 +265,15 @@ class BubbleButton : Button
     /// <summary>Draws itself, so it needs no template</summary>
     internal static readonly ControlTemplate EmptyTemplate = new(typeof(Control));
 
-    protected virtual double LeadingWidth => 0;
+    protected virtual double LeadingWidth => glyph == null ? 0 : GlyphSize + (Text.Length > 0 ? 5 : 0);
 
-    protected virtual void DrawLeading(DrawingContext context, Rect box) { }
+    /// <summary>The side of the square the leading symbol is drawn in</summary>
+    protected virtual double LeadingSize => glyph == null ? 11 : GlyphSize;
+
+    protected virtual void DrawLeading(DrawingContext context, Rect box)
+    {
+        if (glyph is { } kind) Glyphs.Draw(context, kind, box, GlyphBrush, FaceFill);
+    }
 
     protected virtual Brush FaceFill => Fill;
 
@@ -189,7 +303,7 @@ class BubbleButton : Button
         double x = Math.Max(9, (face.Width - contentWidth) / 2);
         if (LeadingWidth > 0)
         {
-            DrawLeading(context, new Rect(x, (face.Height - 11) / 2, 11, 11));
+            DrawLeading(context, new Rect(x, (face.Height - LeadingSize) / 2, LeadingSize, LeadingSize));
             x += LeadingWidth;
         }
         context.DrawText(text, new Point(x, (face.Height - text.Height) / 2));
