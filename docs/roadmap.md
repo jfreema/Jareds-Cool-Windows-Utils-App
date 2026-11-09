@@ -8,7 +8,7 @@ on November 9. Tick items off here as they ship.
 |---|---|---|
 | 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.0) November 2, 2026 |
 | 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.2.0) November 2, 2026 |
-| 0.3.0 | [Record GIFs](#030-record-gifs) with the screenshot tool | In progress |
+| 0.3.0 | [Record GIFs](#030-record-gifs) with the screenshot tool | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.3.0) November 9, 2026 |
 | 0.4.0 | [Temperature](#040-temperature) | In progress |
 | 0.5.0 | [Stay awake with the lid closed](#050-stay-awake-with-the-lid-closed) | Not started |
 | 0.6.0 | [Keyboard cleaning](#060-keyboard-cleaning) | Not started |
@@ -65,7 +65,7 @@ As on the Mac, but without recording GIFs, which came in 0.3.0.
 - [x] A red line around what's recording, and Stop under it, both kept out of the GIF; it stops by itself after a minute
 - [x] A menu where the pointer is, with how long and how big the GIF is: Copy to Clipboard (as a file) and Save
 - [x] The self-test records a window and most of the screen on GitHub's Windows machines before each release
-- [ ] Released
+- [x] Released
 - [ ] Tried on Jared's Windows PC
 
 ## 0.4.0: Temperature
