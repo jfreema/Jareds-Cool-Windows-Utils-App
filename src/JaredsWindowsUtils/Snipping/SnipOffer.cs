@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using JaredsWindowsUtils.Core;
 using JaredsWindowsUtils.Core.Snipping;
@@ -13,18 +14,26 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Snipping;
 
-/// <summary>What to do with a snip, from the menu where you let go of it</summary>
+/// <summary>What to do with a snip or a recording, from the menu where you let go of it</summary>
 enum OfferChoice { Copy, CopyText, Edit, Save }
 
-/// <summary>The menu where a snip's drag ended, as on the Mac: the snip on top, small, then what to do with it. It
-/// behaves like a menu: the arrow keys and Enter pick, and Esc or a click anywhere else throws the snip away.</summary>
+/// <summary>The menu where a snip's drag ended, or where the pointer was when a recording stopped, as on the Mac: the
+/// snip or the recording's first frame on top, small, then what to do with it. It behaves like a menu: the arrow keys
+/// and Enter pick, and Esc or a click anywhere else throws it away.</summary>
 sealed class SnipOffer : Window
 {
-    static readonly (OfferChoice Choice, string Title)[] Choices =
+    static readonly (OfferChoice Choice, string Title)[] SnipChoices =
     [
         (OfferChoice.Copy, "Copy to Clipboard"), (OfferChoice.CopyText, "Copy Text"),
         (OfferChoice.Edit, "Open in Editor"), (OfferChoice.Save, "Save…"),
     ];
+
+    static readonly (OfferChoice Choice, string Title)[] RecordingChoices =
+    [
+        (OfferChoice.Copy, "Copy to Clipboard"), (OfferChoice.Save, "Save…"),
+    ];
+
+    readonly (OfferChoice Choice, string Title)[] choices;
 
     static readonly HashSet<uint> Keys = [VK_ESCAPE, VK_RETURN, VK_UP, VK_DOWN];
 
@@ -40,11 +49,29 @@ sealed class SnipOffer : Window
 
     /// <param name="at">Where the drag ended, in screen pixels</param>
     public SnipOffer(Snip snip, PointD at, Shortcuts shortcuts)
+        : this(snip.Name, snip.Image, snip.Size, $"The snip, {snip.PixelWidth} × {snip.PixelHeight} pixels", null,
+            SnipChoices, at, shortcuts)
     {
         Snip = snip;
+    }
+
+    /// <summary>For a recording: its first frame, how long and how big, then Copy and Save</summary>
+    /// <param name="size">The GIF's, a pixel a point</param>
+    /// <param name="at">Where the pointer was when it stopped, in screen pixels</param>
+    public SnipOffer(string name, BitmapSource? firstFrame, SizeD size, string summary, PointD at, Shortcuts shortcuts)
+        : this(name, firstFrame, size, $"The recording's first frame, {size.Width:0} × {size.Height:0} pixels", summary,
+            RecordingChoices, at, shortcuts)
+    {
+        Summary = summary;
+    }
+
+    SnipOffer(string title, BitmapSource? picture, SizeD size, string description, string? summary,
+        (OfferChoice Choice, string Title)[] choices, PointD at, Shortcuts shortcuts)
+    {
+        this.choices = choices;
         this.at = at;
         this.shortcuts = shortcuts;
-        Title = snip.Name;
+        Title = title;
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
         Background = Brushes.Transparent;
@@ -59,17 +86,17 @@ sealed class SnipOffer : Window
         Left = at.X / scale;
         Top = at.Y / scale;
 
-        var thumbnail = CaptureArea.Thumbnail(snip.Size);
+        var thumbnail = CaptureArea.Thumbnail(size);
         var image = new Image
         {
-            Source = snip.Image,
+            Source = picture,
             Width = thumbnail.Width,
             Height = thumbnail.Height,
             Stretch = Stretch.Fill,
         };
         RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-        AutomationProperties.SetName(image, $"The snip, {snip.PixelWidth} × {snip.PixelHeight} pixels");
-        var picture = new BubbleCard
+        AutomationProperties.SetName(image, description);
+        var card = new BubbleCard
         {
             Child = image,
             Radius = 6,
@@ -78,11 +105,23 @@ sealed class SnipOffer : Window
         };
 
         var list = new StackPanel();
-        for (int index = 0; index < Choices.Length; index++)
+        if (summary != null)
+        {
+            // How long and how big, dimmed, as the Mac's menu shows it
+            list.Children.Add(new TextBlock
+            {
+                Text = summary,
+                FontFamily = Bubble.Body,
+                FontSize = 12,
+                Foreground = Bubble.WithOpacity(Bubble.Ink, 0.6),
+                Margin = new Thickness(12, 7, 12, 7),
+            });
+        }
+        for (int index = 0; index < choices.Length; index++)
         {
             int position = index;
-            var row = new OfferRow(Choices[index].Title, showsDivider: index > 0);
-            row.Click += (_, _) => Choose(Choices[position].Choice);
+            var row = new OfferRow(choices[index].Title, showsDivider: index > 0 || summary != null);
+            row.Click += (_, _) => Choose(choices[position].Choice);
             row.MouseEnter += (_, _) => Highlight(position);
             row.MouseLeave += (_, _) =>
             {
@@ -91,11 +130,12 @@ sealed class SnipOffer : Window
             rows.Add(row);
             list.Children.Add(row);
         }
-        var card = new BubbleCard { Child = list, Margin = new Thickness(0, 9, 2, 3) };
+        var menu = new BubbleCard { Child = list, Margin = new Thickness(0, 9, 2, 3) };
 
         var content = new StackPanel { Margin = new Thickness(10) };
-        content.Children.Add(picture);
-        content.Children.Add(card);
+        if (picture != null) content.Children.Add(card);
+        else menu.Margin = new Thickness(0, 0, 2, 3);
+        content.Children.Add(menu);
         Content = new MenuSurface
         {
             Lift = 4,
@@ -139,7 +179,11 @@ sealed class SnipOffer : Window
         Closed += (_, _) => Chose?.Invoke(choice);
     }
 
-    public Snip Snip { get; }
+    /// <summary>The snip offered, or null for a recording</summary>
+    public Snip? Snip { get; }
+
+    /// <summary>A recording's length and size, or null for a snip</summary>
+    public string? Summary { get; }
 
     /// <summary>What was picked, or null if the snip was thrown away. After the menu has closed.</summary>
     public event Action<OfferChoice?>? Chose;
@@ -188,7 +232,7 @@ sealed class SnipOffer : Window
                 Dismiss();
                 break;
             case VK_RETURN:
-                if (highlighted >= 0) Choose(Choices[highlighted].Choice);
+                if (highlighted >= 0) Choose(choices[highlighted].Choice);
                 break;
             case VK_UP:
                 Highlight(highlighted <= 0 ? rows.Count - 1 : highlighted - 1);

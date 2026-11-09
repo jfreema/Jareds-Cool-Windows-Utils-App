@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using JaredsWindowsUtils.Core;
+using JaredsWindowsUtils.Core.Recording;
 using JaredsWindowsUtils.Core.Snipping;
 using JaredsWindowsUtils.Ui;
 using static JaredsWindowsUtils.Interop.Native;
@@ -11,41 +12,49 @@ using static JaredsWindowsUtils.Interop.Native;
 namespace JaredsWindowsUtils.Snipping;
 
 /// <summary>Choosing what to snip, on the screen as it was when you pressed Win+Alt+P, held still and dimmed on every
-/// display: drag over part of it, or press Space and click a window. Esc or a right-click cancels. Everything here is
-/// in screen pixels.</summary>
+/// display: drag over part of it, or press Space and click a window. Esc or a right-click cancels. Choosing what to
+/// record with Win+Alt+G works as on the Mac instead: a click takes the window under the pointer, or the display off
+/// any window, and a drag part of a display. Everything here is in screen pixels.</summary>
 sealed class SnipOverlay
 {
     static readonly HashSet<uint> Keys = [VK_ESCAPE, VK_SPACE];
+    static readonly HashSet<uint> RecordingKeys = [VK_ESCAPE];
 
     readonly BitmapSource picture;
     readonly RectD screen;
     readonly List<RectD> windows;
     readonly List<SnipDisplay> displays;
     readonly Shortcuts shortcuts;
-    readonly DateTime taken;
     readonly List<OverlayWindow> overlays = [];
     PointD? dragStart;
     SnipDisplay dragDisplay;
+    /// <summary>Moved far enough from where the button went down to be a drag, not a click</summary>
+    bool hasMoved;
     bool finished;
 
     /// <param name="picture">All the displays, from the screen's top left</param>
     /// <param name="screen">Where the picture is: all the displays together</param>
     /// <param name="windows">The windows a click can snip, front to back</param>
+    /// <param name="records">Choosing what to record, not what to snip</param>
     public SnipOverlay(BitmapSource picture, RectD screen, List<RectD> windows, List<SnipDisplay> displays,
-        Shortcuts shortcuts, DateTime taken)
+        Shortcuts shortcuts, bool records = false)
     {
         this.picture = picture;
         this.screen = screen;
         this.windows = windows;
         this.displays = displays;
         this.shortcuts = shortcuts;
-        this.taken = taken;
+        Records = records;
     }
 
-    /// <summary>The snip chosen, or null if it was cancelled</summary>
-    public event Action<Snip?>? Finished;
+    /// <summary>What was chosen, in screen pixels, with its display's pixels per point, or null if it was
+    /// cancelled</summary>
+    public event Action<(RectD Area, double Scale)?>? Finished;
 
-    /// <summary>Space: a click snips the window under it</summary>
+    /// <summary>Choosing what to record: a click takes the window under the pointer</summary>
+    public bool Records { get; }
+
+    /// <summary>Space, for a snip: a click snips the window under it</summary>
     public bool PicksWindows { get; private set; }
     /// <summary>The part being dragged over</summary>
     public RectD? Selection { get; private set; }
@@ -71,7 +80,7 @@ sealed class SnipOverlay
             return;
         }
         // Esc and Space come here wherever the focus is, so they never reach the app you were in
-        shortcuts.Grab(Keys, key =>
+        shortcuts.Grab(Records ? RecordingKeys : Keys, key =>
         {
             if (key == VK_ESCAPE) Finish(null);
             else ToggleMode();
@@ -94,7 +103,7 @@ sealed class SnipOverlay
 
     void ToggleMode()
     {
-        if (finished || IsDragging) return;
+        if (finished || IsDragging || Records) return;
         PicksWindows = !PicksWindows;
         Update();
     }
@@ -111,6 +120,7 @@ sealed class SnipOverlay
         var point = ScreenCapture.Cursor();
         dragStart = point;
         dragDisplay = DisplayAt(point);
+        hasMoved = false;
         Pointer = point;
         window.CaptureMouse();
         Update();
@@ -120,7 +130,11 @@ sealed class SnipOverlay
     {
         if (finished) return;
         Pointer = ScreenCapture.Cursor();
-        if (dragStart is { } start) Selection = CaptureArea.FromDrag(start, Pointer, dragDisplay.Bounds);
+        if (dragStart is { } start)
+        {
+            hasMoved |= Pointer.DistanceTo(start) >= CaptureArea.ShortestDrag;
+            Selection = hasMoved ? CaptureArea.FromDrag(start, Pointer, dragDisplay.Bounds) : null;
+        }
         Update();
     }
 
@@ -138,6 +152,16 @@ sealed class SnipOverlay
         dragStart = null;
         Selection = null;
         if (window.IsMouseCaptured) window.ReleaseMouseCapture();
+        if (Records)
+        {
+            // A click records the window under it, or the display; too small to mean anything, it's still choosing
+            var area = hasMoved ? CaptureArea.FromDrag(start, point, dragDisplay.Bounds)
+                : RecordingLayout.Clicked(start, windows, dragDisplay.Bounds);
+            if (area is { } picked && RecordingLayout.IsBigEnough(picked, dragDisplay.Scale))
+                Finish((picked, dragDisplay.Scale));
+            else Update();
+            return;
+        }
         // A click snips nothing: it's still choosing
         if (CaptureArea.FromDrag(start, point, dragDisplay.Bounds) is { } chosen) Finish((chosen, dragDisplay.Scale));
         else Update();
@@ -157,9 +181,18 @@ sealed class SnipOverlay
             ? found
             : displays.OrderBy(display => display.Bounds.Center.DistanceTo(point)).First();
 
+    /// <summary>What a recording's click there takes: the window under it, as much as is on its display, or the
+    /// display</summary>
+    RectD RecordingArea(PointD point) => RecordingLayout.Clicked(point, windows, DisplayAt(point).Bounds);
+
+    /// <summary>A recording's GIF size, for the size label</summary>
+    public (int Width, int Height) GifSize(RectD area) =>
+        RecordingLayout.GifSize(area.Size, DisplayAt(area.Center).Scale);
+
     void Update()
     {
-        Highlighted = PicksWindows ? WindowArea(Pointer).Area : null;
+        Highlighted = Records ? (IsDragging && hasMoved ? null : RecordingArea(dragStart ?? Pointer))
+            : PicksWindows ? WindowArea(Pointer).Area : null;
         foreach (var window in overlays) window.Refresh();
     }
 
@@ -168,13 +201,12 @@ sealed class SnipOverlay
         if (finished) return;
         finished = true;
         shortcuts.Release();
-        Snip? snip = null;
         if (choice is { } chosen && chosen.Area.Intersection(screen) is { IsEmpty: false } area)
-            snip = new Snip(ScreenCapture.Crop(picture, new PointD(screen.X, screen.Y), area.Integral()), chosen.Scale,
-                taken);
+            choice = (area.Integral(), chosen.Scale);
+        else choice = null;
         // What comes next opens first, so the focus goes straight to it, and never back to the app you were in on the
         // way
-        Finished?.Invoke(snip);
+        Finished?.Invoke(choice);
         foreach (var window in overlays) window.Close();
     }
 }
@@ -284,7 +316,15 @@ sealed class OverlaySurface : FrameworkElement
             double line = Math.Max(1, Math.Round(display.Scale));
             Ring(context, Points(chosen.Inset(-line, -line)), line / scale, Bubble.White);
             Ring(context, Points(chosen.Inset(-2 * line, -2 * line)), line / scale, Bubble.Ink);
-            if (owner.Selection is { } selection) SizeLabel(context, selection, box, all);
+            if (owner.Records)
+            {
+                var (width, height) = owner.GifSize(chosen);
+                SizeLabel(context, $"{width} × {height}", box, all);
+            }
+            else if (owner.Selection is { } selection)
+            {
+                SizeLabel(context, $"{selection.Width:0} × {selection.Height:0}", box, all);
+            }
         }
         else
         {
@@ -308,11 +348,11 @@ sealed class OverlaySurface : FrameworkElement
             new CombinedGeometry(GeometryCombineMode.Exclude, new RectangleGeometry(outer), new RectangleGeometry(inner)));
     }
 
-    /// <summary>How big the snip will be, in pixels, on a pill under its bottom right corner, or inside it if there's
-    /// no room below</summary>
-    void SizeLabel(DrawingContext context, RectD selection, Rect box, Rect display)
+    /// <summary>How big the snip or the GIF will be, in pixels, on a pill under its bottom right corner, or inside it if
+    /// there's no room below</summary>
+    void SizeLabel(DrawingContext context, string size, Rect box, Rect display)
     {
-        var text = Bubble.Text($"{selection.Width:0} × {selection.Height:0}", Bubble.BodyFace, 12, Bubble.Ink, this);
+        var text = Bubble.Text(size, Bubble.BodyFace, 12, Bubble.Ink, this);
         var pill = new Rect(0, 0, Math.Ceiling(text.WidthIncludingTrailingWhitespace) + 14, Math.Ceiling(text.Height) + 6);
         double x = box.Right - pill.Width, y = box.Bottom + 8;
         if (y + pill.Height + 3 > display.Bottom) y = box.Bottom - pill.Height - 8;
@@ -327,9 +367,11 @@ sealed class OverlaySurface : FrameworkElement
     /// top</summary>
     void Hint(DrawingContext context, Rect visible, Point pointer)
     {
-        string message = owner.PicksWindows
-            ? "Click a window to snip it  ·  Space to drag instead  ·  Esc to cancel"
-            : "Drag over what to snip  ·  Space to snip a window  ·  Esc to cancel";
+        string message = owner.Records
+            ? "Drag over what to record, or click a window  ·  Esc to cancel"
+            : owner.PicksWindows
+                ? "Click a window to snip it  ·  Space to drag instead  ·  Esc to cancel"
+                : "Drag over what to snip  ·  Space to snip a window  ·  Esc to cancel";
         var text = Bubble.Text(message, Bubble.BodyFace, 13, Bubble.White, this);
         var shadow = Bubble.Text(message, Bubble.BodyFace, 13, Bubble.Ink, this);
         double width = Math.Ceiling(text.WidthIncludingTrailingWhitespace) + 28, height = Math.Ceiling(text.Height) + 14;

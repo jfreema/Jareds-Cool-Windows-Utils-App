@@ -166,8 +166,11 @@ sealed class App : Application
             : null,
         SnipScreen: snipper.IsEnabled,
         SnipNote: snipper.Status == ScreenSnipper.State.Unavailable
-            ? "Windows didn't let the app watch for Win+Alt+P"
+            ? snipper.RecordsGifs
+                ? "Windows didn't let the app watch for Win+Alt+P and Win+Alt+G"
+                : "Windows didn't let the app watch for Win+Alt+P"
             : null,
+        RecordGifs: snipper.RecordsGifs,
         IsCheckingForUpdates: updater.IsBusy);
 
     void RefreshMenu() => menu?.Update(State());
@@ -208,6 +211,9 @@ sealed class App : Application
                 break;
             case MenuToggle.SnipScreen:
                 snipper.SetEnabled(on);
+                break;
+            case MenuToggle.RecordGifs:
+                snipper.SetRecordsGifs(on);
                 break;
         }
         // Back to how things are, if the feature didn't take it

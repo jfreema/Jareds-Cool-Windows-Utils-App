@@ -53,6 +53,23 @@ open the folder. The log says what the app did and why something didn't work.
 - **Closing the editor asks whether to save.** It does when there are shapes you haven't copied or saved. Choose
   **Don't Save** to close it anyway. Quitting the app asks once for all of them.
 
+## Recording GIFs
+
+- **Win+Alt+G does nothing.** Make sure **Snip the Screen with Win+Alt+P** is on in the menu, and **Record GIFs with
+  Win+Alt+G** under it. If the menu says **Windows didn't let the app watch for Win+Alt+P and Win+Alt+G**, security
+  software may be blocking it, as for window snapping. Opening the menu tries again.
+- **Xbox Game Bar saves a clip instead.** Game Bar uses Win+Alt+G to save the last 30 seconds of a game when its
+  background recording is on. The app gets the shortcut first while **Record GIFs with Win+Alt+G** is on; when it's
+  off, or the app isn't running, Game Bar gets it.
+- **The GIF pastes as a picture that doesn't move, or not at all.** Copy to Clipboard copies the GIF as a file, as File
+  Explorer copies one. Apps that take files, like Slack, Teams, Outlook and File Explorer, paste it as it is. Apps that
+  only take pictures, like Paint, can't: choose **Save…** instead and add the file there.
+- **The GIF skips moments.** When the PC is too busy to keep up, the app leaves out frames rather than slow everything
+  down. A smaller area helps.
+- **The recording stopped by itself.** Recordings stop after a minute.
+- **Part of the GIF is black.** Some apps keep their windows out of screenshots and recordings, like streaming video
+  with copy protection. Windows' own Snipping Tool sees them the same way.
+
 ## Updates
 
 - **"Couldn't check for updates."** The app couldn't reach GitHub. Check your internet connection and try again.

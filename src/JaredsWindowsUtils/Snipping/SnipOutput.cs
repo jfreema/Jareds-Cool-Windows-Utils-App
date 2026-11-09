@@ -10,7 +10,7 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Snipping;
 
-/// <summary>Copying and saving snips, for the menu after a snip and for the editor</summary>
+/// <summary>Copying and saving snips, for the menu after a snip and for the editor, and saving recordings</summary>
 static class SnipOutput
 {
     const string FolderKey = "snipFolder";
@@ -75,15 +75,26 @@ static class SnipOutput
     }
 
     /// <summary>A Save dialog, over the editor or on its own. True if it saved.</summary>
-    public static bool Save(BitmapSource image, double scale, string name, Window? owner, Settings settings)
+    public static bool Save(BitmapSource image, double scale, string name, Window? owner, Settings settings) =>
+        Save("snip", ".png", "PNG image (*.png)|*.png", name, owner, settings, path => Write(path, image, scale));
+
+    /// <summary>A Save dialog for a recording, which moves its GIF from where it waited. True if it saved.</summary>
+    public static bool SaveGif(string file, string name, Settings settings) =>
+        Save("GIF", ".gif", "GIF image (*.gif)|*.gif", name, null, settings,
+            path => File.Move(file, path, overwrite: true));
+
+    /// <param name="what">"snip" or "GIF", for the dialog's title and the message if it fails</param>
+    static bool Save(string what, string extension, string filter, string name, Window? owner, Settings settings,
+        Action<string> write)
     {
+        string title = "Save " + char.ToUpperInvariant(what[0]) + what[1..];
         var dialog = new SaveFileDialog
         {
-            Title = "Save Snip",
-            FileName = name + ".png",
-            DefaultExt = ".png",
+            Title = title,
+            FileName = name + extension,
+            DefaultExt = extension,
             AddExtension = true,
-            Filter = "PNG image (*.png)|*.png",
+            Filter = filter,
             OverwritePrompt = true,
             InitialDirectory = Folder(settings),
         };
@@ -94,7 +105,7 @@ static class SnipOutput
         }
         else
         {
-            var anchor = Anchor();
+            var anchor = Anchor(title);
             try
             {
                 chosen = dialog.ShowDialog(anchor) == true;
@@ -108,23 +119,23 @@ static class SnipOutput
         settings.Set(FolderKey, Path.GetDirectoryName(dialog.FileName));
         try
         {
-            Write(dialog.FileName, image, scale);
+            write(dialog.FileName);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
             or NotSupportedException or System.Security.SecurityException)
         {
-            Log.Error("snip", "Couldn't save a snip", exception);
-            BubbleDialog.Show("Couldn't save the snip", exception.Message);
+            Log.Error("snip", $"Couldn't save a {what}", exception);
+            BubbleDialog.Show($"Couldn't save the {what}", exception.Message);
             return false;
         }
-        Log.Info("snip", "Saved a snip");
+        Log.Info("snip", $"Saved a {what}");
         return true;
     }
 
     /// <summary>An invisible window in the middle of the display with the pointer, for a Save dialog from the menu after
     /// a snip to sit on. Brought to the front first, it brings the dialog with it, where on its own the dialog could
     /// open behind the window you were in.</summary>
-    static Window Anchor()
+    static Window Anchor(string title)
     {
         var pointer = ScreenCapture.Cursor();
         var point = new POINT { X = (int)pointer.X, Y = (int)pointer.Y };
@@ -132,7 +143,7 @@ static class SnipOutput
         double scale = DpiAt(point) / 96.0;
         var anchor = new Window
         {
-            Title = "Save Snip",
+            Title = title,
             WindowStyle = WindowStyle.None,
             AllowsTransparency = true,
             Background = Brushes.Transparent,

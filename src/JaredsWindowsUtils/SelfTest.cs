@@ -89,6 +89,7 @@ static partial class SelfTest
             await Snapping(app, folder, Add, facts);
             await NoMenus(folder, Add, facts);
             await Snipping(app, folder, Add, facts);
+            await Recording(app, folder, Add, facts);
         }
         catch (Exception exception)
         {
@@ -123,7 +124,8 @@ static partial class SelfTest
         {
             var window = await MainWindow(test);
             var fixedWindow = await MainWindow(fixedSize);
-            add("test windows open", window != IntPtr.Zero && fixedWindow != IntPtr.Zero, "");
+            add("test windows open", window != IntPtr.Zero && fixedWindow != IntPtr.Zero,
+                $"{Ended(test)} {Ended(fixedSize)}".Trim());
             if (window == IntPtr.Zero) return;
             var start = WindowMover.FrameOf(window)!.Value;
             var area = displays[SnapLayout.DisplayFor(start, displays) ?? 0].Visible;
@@ -288,7 +290,7 @@ static partial class SelfTest
 
     static async Task<IntPtr> MainWindow(Process process)
     {
-        for (int attempt = 0; attempt < 100; attempt++)
+        for (int attempt = 0; attempt < 100 && !process.HasExited; attempt++)
         {
             await Task.Delay(100);
             process.Refresh();
@@ -297,6 +299,9 @@ static partial class SelfTest
         }
         return IntPtr.Zero;
     }
+
+    /// <summary>Why a test window didn't show, if its process ended</summary>
+    static string Ended(Process process) => process.HasExited ? $"it quit with exit code {process.ExitCode}" : "";
 
     static async Task Picture(Window window, string folder, string name)
     {
@@ -399,15 +404,59 @@ static partial class SelfTest
     static string Describe(RectD? rect) => rect?.ToString() ?? "nothing";
 }
 
-/// <summary>--test-window [fixed]: a plain window in a process of its own, for the self-test to snap</summary>
+/// <summary>--test-window [fixed|moving]: a plain window in a process of its own, for the self-test to snap, or with a
+/// square going back and forth across it, to record</summary>
 static class TestWindow
 {
-    public static int Run(bool fixedSize)
+    public static int Run(bool fixedSize, bool moving = false)
+    {
+        try
+        {
+            return Open(fixedSize, moving);
+        }
+        catch (Exception exception)
+        {
+            // Into the app's log, where the self-test's report points
+            Log.Error("app", "Self-test: the test window failed", exception);
+            return 3;
+        }
+    }
+
+    static int Open(bool fixedSize, bool moving)
     {
         var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
+        var label = new TextBlock
+        {
+            Text = fixedSize ? "Fixed size" : moving ? "Record me" : "Snap me",
+            FontSize = 28,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        // The square goes over the words, in a content of its own, since an element can only be in one place
+        UIElement content = label;
+        if (moving)
+        {
+            var square = new System.Windows.Shapes.Rectangle { Width = 60, Height = 60, Fill = Bubble.Red };
+            var canvas = new Canvas();
+            Canvas.SetTop(square, 300);
+            canvas.Children.Add(square);
+            var grid = new Grid();
+            grid.Children.Add(label);
+            grid.Children.Add(canvas);
+            content = grid;
+            var clock = Stopwatch.StartNew();
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+            timer.Tick += (_, _) =>
+            {
+                // Across and back every four seconds
+                double phase = clock.Elapsed.TotalSeconds % 4 / 2;
+                Canvas.SetLeft(square, 20 + 500 * (phase < 1 ? phase : 2 - phase));
+            };
+            timer.Start();
+        }
         var window = new Window
         {
-            Title = fixedSize ? "Fixed Size Test Window" : "Snap Test Window",
+            Title = fixedSize ? "Fixed Size Test Window" : moving ? "Record Test Window" : "Snap Test Window",
             Width = fixedSize ? 420 : 640,
             Height = fixedSize ? 300 : 480,
             Left = fixedSize ? 300 : 120,
@@ -415,13 +464,7 @@ static class TestWindow
             WindowStartupLocation = WindowStartupLocation.Manual,
             ResizeMode = fixedSize ? ResizeMode.NoResize : ResizeMode.CanResize,
             Background = Bubble.Tint,
-            Content = new TextBlock
-            {
-                Text = fixedSize ? "Fixed size" : "Snap me",
-                FontSize = 28,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-            },
+            Content = content,
         };
         window.Loaded += (_, _) => window.Activate();
         return app.Run(window);

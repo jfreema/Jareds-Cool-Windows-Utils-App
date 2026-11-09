@@ -33,7 +33,7 @@ static partial class SelfTest
         try
         {
             var window = await MainWindow(test);
-            add("snip test window opens", window != IntPtr.Zero, "");
+            add("snip test window opens", window != IntPtr.Zero, Ended(test));
             if (window == IntPtr.Zero) return;
             if (!await SnipAndCopy(snipper, window, folder, add, facts)) return;
             if (!await SnipWindowAndCopyText(snipper, window, folder, add, facts)) return;
@@ -69,11 +69,11 @@ static partial class SelfTest
         var expected = CaptureArea.FromDrag(start, end, display);
         var offer = await Until(() => snipper.Offer);
         add("a drag snips that part of the screen",
-            offer != null && expected is { } area && offer.Snip.PixelWidth == (int)area.Width
-            && offer.Snip.PixelHeight == (int)area.Height,
+            offer != null && expected is { } area && offer.Snip!.PixelWidth == (int)area.Width
+            && offer.Snip!.PixelHeight == (int)area.Height,
             $"dragged {start} to {end}, expected {Describe(expected)}, got {Describe(offer?.Snip)}");
         if (offer == null) return false;
-        var corner = PixelAt(offer.Snip.Image, 8, 8);
+        var corner = PixelAt(offer.Snip!.Image, 8, 8);
         add("the snip is the window under the drag", Near(corner, 0xEB, 0xF2, 0xFF), $"pixel {corner}");
         await Task.Delay(500);
         facts["menu after a snip in front"] = (GetForegroundWindow() == Handle(offer)).ToString();
@@ -84,7 +84,7 @@ static partial class SelfTest
         await Task.Delay(700);
         var copied = ClipboardPng();
         add("Copy to Clipboard copies the snip as a PNG",
-            copied is { } png && png.Width == offer.Snip.PixelWidth && png.Height == offer.Snip.PixelHeight,
+            copied is { } png && png.Width == offer.Snip!.PixelWidth && png.Height == offer.Snip!.PixelHeight,
             copied is { } got ? $"{got.Width} × {got.Height} at {got.Dpi:0.#} dpi" : "no PNG");
         add("and as a bitmap, for apps like Paint", ClipboardHasImage(), "");
         front = GetForegroundWindow();
@@ -114,8 +114,8 @@ static partial class SelfTest
         var offer = await Until(() => snipper.Offer);
         var expected = CaptureArea.OnScreen(frame, ScreenCapture.VirtualScreen());
         add("a click snips the window under it",
-            offer != null && expected is { } area && offer.Snip.PixelWidth == (int)area.Width
-            && offer.Snip.PixelHeight == (int)area.Height,
+            offer != null && expected is { } area && offer.Snip!.PixelWidth == (int)area.Width
+            && offer.Snip!.PixelHeight == (int)area.Height,
             $"expected {Describe(expected)}, got {Describe(offer?.Snip)}");
         if (offer == null) return false;
 
@@ -173,7 +173,7 @@ static partial class SelfTest
             add("a drag snips the window's middle", false, "");
             return false;
         }
-        var snip = offer.Snip;
+        var snip = offer.Snip!;
         offer.Choose(OfferChoice.Edit);
         await Task.Delay(1500);
         var editor = snipper.Editors.All.LastOrDefault();

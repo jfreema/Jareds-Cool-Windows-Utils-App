@@ -9,7 +9,7 @@ using static JaredsWindowsUtils.Interop.Native;
 namespace JaredsWindowsUtils.Ui;
 
 /// <summary>A switch in the menu</summary>
-enum MenuToggle { OpenAtLogin, SnapWindows, SnapThirds, SnipScreen }
+enum MenuToggle { OpenAtLogin, SnapWindows, SnapThirds, SnipScreen, RecordGifs }
 
 /// <summary>What a button in the menu does</summary>
 enum MenuCommand { ShowAbout, CheckForUpdates, Quit }
@@ -17,8 +17,9 @@ enum MenuCommand { ShowAbout, CheckForUpdates, Quit }
 /// <summary>What the menu shows</summary>
 /// <param name="SnapNote">Why the shortcuts didn't take, under the switch</param>
 /// <param name="SnipNote">Why Win+Alt+P didn't take, under its switch</param>
+/// <param name="RecordGifs">Win+Alt+G, an option of snipping</param>
 sealed record MenuState(bool OpenAtLogin, bool SnapWindows, bool SnapThirds, string? SnapNote, bool SnipScreen,
-    string? SnipNote, bool IsCheckingForUpdates);
+    string? SnipNote, bool RecordGifs, bool IsCheckingForUpdates);
 
 /// <summary>The tray icon's menu, drawn in the bubble pop style like the Mac app's. It behaves like a menu: it opens
 /// beside the icon, and closes on a click elsewhere, Esc, or a second click on the icon. Switches stay put when flipped,
@@ -41,6 +42,10 @@ sealed class MenuWindow : Window
     readonly Strip snapNote;
     readonly TextBlock snapNoteText;
     readonly ToggleRow snipScreen = new("Snip the Screen with Win+Alt+P", showsDivider: false);
+    readonly ChipToggle recordGifs = new("Record GIFs with Win+Alt+G")
+    {
+        ToolTip = "Records part of the screen as a GIF, like scrolling through a page",
+    };
     readonly Strip snipNote;
     readonly TextBlock snipNoteText;
     readonly BubbleButton checkForUpdates = new("Check for Updates");
@@ -69,13 +74,14 @@ sealed class MenuWindow : Window
         snapWindows.Toggled += on => Toggled?.Invoke(MenuToggle.SnapWindows, on);
         snapThirds.Toggled += on => Toggled?.Invoke(MenuToggle.SnapThirds, on);
         snipScreen.Toggled += on => Toggled?.Invoke(MenuToggle.SnipScreen, on);
+        recordGifs.Toggled += on => Toggled?.Invoke(MenuToggle.RecordGifs, on);
         (snapNote, snapNoteText) = Note();
         (snipNote, snipNoteText) = Note();
 
         var content = new StackPanel { Margin = new Thickness(12) };
         content.Children.Add(Header());
         content.Children.Add(Section("Window Snapping", Card(snapWindows, SnapOptions(), snapNote)));
-        content.Children.Add(Section("Screenshots", Card(snipScreen, snipNote), spaceAbove: true));
+        content.Children.Add(Section("Screenshots", Card(snipScreen, Options(recordGifs), snipNote), spaceAbove: true));
         content.Children.Add(Footer());
 
         Content = new MenuSurface
@@ -141,6 +147,8 @@ sealed class MenuWindow : Window
         snapNoteText.Text = state.SnapNote ?? "";
         snapNote.Visibility = state.SnapNote == null ? Visibility.Collapsed : Visibility.Visible;
         snipScreen.IsOn = state.SnipScreen;
+        recordGifs.IsOn = state.RecordGifs;
+        recordGifs.IsEnabled = state.SnipScreen;
         snipNoteText.Text = state.SnipNote ?? "";
         snipNote.Visibility = state.SnipNote == null ? Visibility.Collapsed : Visibility.Visible;
         checkForUpdates.Text = state.IsCheckingForUpdates ? "Checking…" : "Check for Updates";
@@ -267,10 +275,13 @@ sealed class MenuWindow : Window
         return (new Strip { Child = note, Visibility = Visibility.Collapsed }, text);
     }
 
-    FrameworkElement SnapOptions()
+    FrameworkElement SnapOptions() => Options(snapThirds);
+
+    /// <summary>Chips under a switch, for its options</summary>
+    static FrameworkElement Options(params UIElement[] chips)
     {
         var options = new WrapPanel();
-        options.Children.Add(snapThirds);
+        foreach (var chip in chips) options.Children.Add(chip);
         return new Strip { Child = options };
     }
 

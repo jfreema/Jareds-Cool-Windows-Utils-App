@@ -1,4 +1,5 @@
 using JaredsWindowsUtils.Core;
+using JaredsWindowsUtils.Recording;
 using JaredsWindowsUtils.Ui;
 using static JaredsWindowsUtils.Interop.Native;
 
@@ -6,7 +7,7 @@ namespace JaredsWindowsUtils.Snipping;
 
 /// <summary>Win+Alt+P, as control+option+P on the Mac: snip part of the screen, or a window, then copy it, copy the
 /// words in it, mark it up in the editor, or save it. The app takes the snip itself, so Windows asks no permission for
-/// it.</summary>
+/// it. Win+Alt+G records GIFs, an option of it, as on the Mac.</summary>
 sealed class ScreenSnipper : IDisposable
 {
     /// <summary>Unavailable: Windows wouldn't let the app watch the keyboard</summary>
@@ -14,6 +15,7 @@ sealed class ScreenSnipper : IDisposable
 
     public const uint Key = 'P';
     const string EnabledKey = "snipScreen";
+    const string RecordKey = "recordGIFs";
 
     readonly Settings settings;
     readonly Shortcuts shortcuts;
@@ -25,6 +27,7 @@ sealed class ScreenSnipper : IDisposable
         this.settings = settings;
         this.shortcuts = shortcuts;
         Editors = new SnipEditors(settings);
+        Recorder = new ScreenRecorder(settings, shortcuts, () => Overlay != null || Offer != null);
     }
 
     public event Action? Changed;
@@ -35,6 +38,12 @@ sealed class ScreenSnipper : IDisposable
     public bool IsEnabled => settings.GetBool(EnabledKey) ?? true;
 
     public SnipEditors Editors { get; }
+
+    public ScreenRecorder Recorder { get; }
+
+    /// <summary>Win+Alt+G records GIFs. On from the start too, where the Mac waits to be asked: Windows asks no
+    /// permission for it.</summary>
+    public bool RecordsGifs => settings.GetBool(RecordKey) ?? true;
 
     /// <summary>The screen picker while it's open, for the self-test</summary>
     internal SnipOverlay? Overlay { get; private set; }
@@ -53,11 +62,19 @@ sealed class ScreenSnipper : IDisposable
         Refresh();
     }
 
-    /// <summary>Matches the shortcut and status to the switch</summary>
+    public void SetRecordsGifs(bool on)
+    {
+        settings.Set(RecordKey, on);
+        Refresh();
+    }
+
+    /// <summary>Matches the shortcuts and status to the switch and its option</summary>
     public void Refresh()
     {
         if (IsEnabled) shortcuts.Add(Key, TakeSnip);
         else shortcuts.Remove(Key);
+        if (IsEnabled && RecordsGifs) shortcuts.Add(ScreenRecorder.Key, Recorder.Pressed);
+        else shortcuts.Remove(ScreenRecorder.Key);
         var next = !IsEnabled ? State.Off : shortcuts.IsWatching ? State.On : State.Unavailable;
         if (next == Status) return;
         Status = next;
@@ -68,7 +85,8 @@ sealed class ScreenSnipper : IDisposable
     /// <summary>Win+Alt+P: the screen as it is now, held still to choose from. One at a time.</summary>
     public void TakeSnip()
     {
-        if (IsBusy) return;
+        // While recording, a snip's picker would be in the GIF
+        if (IsBusy || Recorder.Status != ScreenRecorder.Stage.Idle) return;
         previous = GetForegroundWindow();
         var taken = DateTime.Now;
         var screen = ScreenCapture.VirtualScreen();
@@ -79,18 +97,19 @@ sealed class ScreenSnipper : IDisposable
             BubbleDialog.Show("Couldn't take the snip", "Windows didn't let the app see the screen. Try again.");
             return;
         }
-        var overlay = new SnipOverlay(picture, screen, ScreenCapture.Windows(), ScreenCapture.Displays(), shortcuts,
-            taken);
+        var overlay = new SnipOverlay(picture, screen, ScreenCapture.Windows(), ScreenCapture.Displays(), shortcuts);
         Overlay = overlay;
-        overlay.Finished += snip =>
+        overlay.Finished += pick =>
         {
             Overlay = null;
-            if (snip == null)
+            if (pick is not { } chosen)
             {
                 Log.Info("snip", "Snip cancelled");
                 HandBackFocus();
                 return;
             }
+            var snip = new Snip(ScreenCapture.Crop(picture, new PointD(screen.X, screen.Y), chosen.Area), chosen.Scale,
+                taken);
             Log.Info("snip", $"Took a snip, {snip.PixelWidth} × {snip.PixelHeight} pixels at {snip.Scale:0.##}×");
             ShowOffer(snip);
         };
@@ -180,6 +199,8 @@ sealed class ScreenSnipper : IDisposable
     public void Dispose()
     {
         shortcuts.Remove(Key);
+        shortcuts.Remove(ScreenRecorder.Key);
+        Recorder.Dispose();
         Offer?.Dismiss();
         Editors.Discard();
     }

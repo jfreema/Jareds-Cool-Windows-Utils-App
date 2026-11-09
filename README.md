@@ -8,15 +8,15 @@
 
 <p align="center">Windows 10 or 11 · 64-bit · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/latest/download/JaredsWindowsUtils.exe">Portable version</a> · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases">All versions</a></p>
 
-<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, a switch for snipping the screen with Win+Alt+P, and About, Check for Updates and Quit buttons"></p>
+<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, a switch for snipping the screen with Win+Alt+P, Record GIFs with Win+Alt+G, and About, Check for Updates and Quit buttons"></p>
 
 <table>
   <tr>
     <td width="50%"><b><a href="#window-snapping">Window snapping</a></b><br>Win+Alt and an arrow key put the window you're in into halves, thirds, quarters or sixths.</td>
-    <td width="50%"><b><a href="#screenshot-tool">Screenshot tool</a></b><br>Win+Alt+P snips part of the screen to copy, save or mark up, or copies the text in it.</td>
+    <td width="50%"><b><a href="#screenshot-tool">Screenshot tool</a></b><br>Win+Alt+P snips part of the screen to copy, save or mark up, or copies the text in it. Win+Alt+G records it as a GIF.</td>
   </tr>
   <tr>
-    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: staying awake with the lid closed is next.</td>
+    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: a temperature readout is next.</td>
     <td width="50%"></td>
   </tr>
 </table>
@@ -62,9 +62,9 @@ Windows' own snapping, with the Windows key and the arrow keys or by dragging a 
 
 ## Screenshot tool
 
-Press Win+Alt+P to snip part of the screen, then copy it, save it, mark it up with boxes, lines, arrows, highlights, blurs and text, or copy the text in it.
+Press Win+Alt+P to snip part of the screen, then copy it, save it, mark it up with boxes, lines, arrows, highlights, blurs and text, or copy the text in it. Press Win+Alt+G to record part of the screen as a GIF, like scrolling through a page, to paste into a message or a document.
 
-**Turn it on:** it's on from the start. Its switch is **Snip the Screen with Win+Alt+P**, under **Screenshots** in the menu.
+**Turn it on:** it's on from the start. Its switch is **Snip the Screen with Win+Alt+P**, under **Screenshots** in the menu, and **Record GIFs with Win+Alt+G** under it turns GIFs on and off.
 
 **Use it:** press Win+Alt+P and drag across part of the screen. Press Space to pick a whole window instead and click it, or press Esc to cancel. A menu opens where you let go, with **Copy to Clipboard**, **Copy Text**, **Open in Editor** and **Save…**. Click one, or use the arrow keys and Enter. Esc, or a click anywhere else, throws the snip away.
 
@@ -87,6 +87,10 @@ To change a shape, click it. The one you just drew is picked up already, so you 
 | Ctrl+W | Close the editor. If there are shapes you haven't copied or saved, it asks first. |
 
 **Save…** saves a PNG, starting in Pictures\Screenshots, where Windows keeps its own screenshots, then wherever you saved last. Windows' own screenshots, with Windows key+Shift+S and Print Screen, keep working too.
+
+**Record a GIF:** press Win+Alt+G, then drag across part of the screen, or click a window to record all of it. Click off any window for the whole screen, or press Esc to cancel. A red line goes around what's recording: scroll, click and type as you like, then click **Stop** under it or press Win+Alt+G again. It stops by itself after a minute. A menu opens where the pointer is, saying how long and how big the GIF is, with **Copy to Clipboard**, to paste it into Slack, Teams, an email or a document, and **Save…**. It's copied as a file, as File Explorer copies one, so it pastes as a GIF that moves.
+
+GIFs show the pointer, but not the red line or **Stop**. They're 15 frames a second, sized as at 100% display scale, and 1280 pixels across at most. Parts that don't move cost next to nothing, so a smaller area or a shorter recording makes a smaller file. The wait before you start scrolling is cut to a second, and any pause along the way to two, so the GIF doesn't sit still each time it plays.
 
 ---
 

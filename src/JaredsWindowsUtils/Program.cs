@@ -62,7 +62,8 @@ static class Program
             OpenAtLogin.Remove();
             return 0;
         }
-        if (args.Contains("--test-window")) return TestWindow.Run(fixedSize: args.Contains("fixed"));
+        if (args.Contains("--test-window"))
+            return TestWindow.Run(fixedSize: args.Contains("fixed"), moving: args.Contains("moving"));
         if (Array.IndexOf(args, "--press") is var press and >= 0 && press + 1 < args.Length)
             return SelfTest.PressShortcut(args[press + 1]);
 

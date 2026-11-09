@@ -6,16 +6,17 @@ Notes for any coding agent working on Jared's Cool Windows Utilities App.
 
 The Windows version of [Jared's Cool Mac Utilities App](https://github.com/jfreema/Jareds-Cool-Mac-Utils-App): a tray
 app with the same bubble pop menu, getting the Mac app's features one at a time. [docs/roadmap.md](docs/roadmap.md)
-tracks which are done: tick items off there as they ship. 0.1.0 has window snapping and 0.2.0 the screenshot tool.
-Jared asked for 0.2.0 to follow 0.1.0 straight away, and for 0.3.0 to wait until he has tried 0.2.0; check with him
-before starting each phase after that. It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub
-Releases as an installer and a portable exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
+tracks which are done: tick items off there as they ship. 0.1.0 has window snapping, 0.2.0 the screenshot tool and
+0.3.0 GIF recording. Jared asked for 0.2.0 to follow 0.1.0 straight away, then on November 9, 2026 for GIFs and a
+temperature readout (0.4.0); check with him before starting each phase after that. It's C# on .NET 10 with WPF, for
+Windows 10 and 11, x64. It ships on GitHub Releases as an installer and a portable exe, not on the Microsoft Store.
+[README.md](README.md) is the user guide.
 
 The Mac app is the reference for how a feature behaves and looks. Port its logic into pure, tested C# rather than
 reinventing it, and keep its labels, with the shortcuts spelled out as Windows writes them: "Win+Alt+arrow keys".
 
 **Shortcuts** are Win+Alt and one key where the Mac app uses control+option: Win+Alt+arrow keys snap windows,
-Win+Alt+P snips (0.2.0) and Win+Alt+G will record GIFs (0.7.0). Jared chose them on November 2, 2026, asking for no
+Win+Alt+P snips (0.2.0) and Win+Alt+G records GIFs (0.3.0). Jared chose them on November 2, 2026, asking for no
 significant clashes and no three-key shortcuts. Ctrl+Alt is AltGr on many keyboard layouts (Ctrl+Alt+P types ö on
 US-International), and VS Code, Visual Studio, JetBrains IDEs, Word and Magnifier use Ctrl+Alt+arrow keys or
 Ctrl+Alt+P, while apps leave the Windows key alone. Win+Ctrl+Left/Right switch desktops and Win+Shift+arrows move
@@ -53,8 +54,9 @@ delete a side branch from a container, where `git push --delete` is refused, pus
 deletes the branch with `github.token`.
 
 Other test hooks: `--update-now` (installs a newer version without asking, quietly), `--settings <file>`,
-`--test-window [fixed]`, `--press <letter>` (Win+Alt and the letter, pressed from a process of its own, as the keyboard
-does while you're in another app), and the `updateFeed` setting, which points Check for Updates elsewhere.
+`--test-window [fixed|moving]` (moving has a square going back and forth, to record), `--press <letter>` (Win+Alt and
+the letter, pressed from a process of its own, as the keyboard does while you're in another app), and the `updateFeed`
+setting, which points Check for Updates elsewhere.
 
 ## Code
 
@@ -65,6 +67,7 @@ does while you're in another app), and the `updateFeed` setting, which points Ch
 | Tray icon | `Tray/TrayIcon` (its own `Shell_NotifyIcon`, re-added when Explorer restarts, recolored for a light or dark taskbar) |
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
 | Screenshot tool | `Snipping/ScreenSnipper` (Win+Alt+P, then the menu's choices), `Snipping/SnipOverlay` (the screen picker), `Snipping/SnipOffer` (the menu after a snip), `Snipping/SnipEditorWindow` (the editors), `Snipping/SnipCanvas` and `Snipping/SnipSidebar` (the editor's snip and tools), `Snipping/SnipRenderer` (shapes, drawn the same on the canvas and in what's copied or saved), `Snipping/SnipOutput` (clipboard and PNG files), `Snipping/TextRecognizer` (Copy Text), `Snipping/ScreenCapture`, `Ui/Toast`, and in Core `Snipping/SnipEditorModel` (the editor's logic, step for step as on the Mac), `Annotation`, `SnipLayout` and `Blur` |
+| GIF recording | `Recording/ScreenRecorder` (Win+Alt+G, through the screen picker, then the menu's choices), `Recording/GifRecording` (takes the pictures and writes the GIF, on threads of their own), `Recording/RecordingControls` (the red line and Stop), and in Core `Recording/GifWriter` (the GIF, frame by frame, as on the Mac) and `RecordingLayout` |
 | Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
@@ -97,6 +100,12 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
   or saved. Shadows are WPF's `DropShadowEffect`, whose blur spreads about 1.5 times as far as Core Graphics' for the
   same radius. Copy puts a PNG on the clipboard, which keeps the display's dpi and most apps paste, and a bitmap for
   apps like Paint.
+- **The red line and Stop stay out of GIFs** through `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`, which keeps
+  them out of every capture, the self-test's pictures of the screen too: draw them with `Render` to see them. The
+  pictures are GDI's `BitBlt` without `CAPTUREBLT`, which would make the pointer flicker, with the pointer drawn in
+  after. They're taken and written on threads of their own, and when the writing falls behind a picture is left out,
+  as on the Mac. A recording waits in `%TEMP%\JaredsWindowsUtils\Recordings` and is copied as a file, which the next
+  copy replaces.
 - **Copy Text uses `Windows.Media.Ocr`,** through the Windows SDK's .NET projection (the app targets
   `net10.0-windows10.0.19041.0`). It reads only the languages whose text recognition is installed; without any, the app
   says how to add it.
