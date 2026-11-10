@@ -6,11 +6,11 @@ Notes for any coding agent working on Jared's Cool Windows Utilities App.
 
 The Windows version of [Jared's Cool Mac Utilities App](https://github.com/jfreema/Jareds-Cool-Mac-Utils-App): a tray
 app with the same bubble pop menu, getting the Mac app's features one at a time. [docs/roadmap.md](docs/roadmap.md)
-tracks which are done: tick items off there as they ship. 0.1.0 has window snapping, 0.2.0 the screenshot tool and
-0.3.0 GIF recording. Jared asked for 0.2.0 to follow 0.1.0 straight away, then on November 9, 2026 for GIFs and a
-temperature readout (0.4.0); check with him before starting each phase after that. It's C# on .NET 10 with WPF, for
-Windows 10 and 11, x64. It ships on GitHub Releases as an installer and a portable exe, not on the Microsoft Store.
-[README.md](README.md) is the user guide.
+tracks which are done: tick items off there as they ship. 0.1.0 has window snapping, 0.2.0 the screenshot tool, 0.3.0
+GIF recording and 0.4.0 the temperatures. Jared asked for 0.2.0 to follow 0.1.0 straight away, then on
+November 9, 2026 for GIFs and a temperature readout (0.4.0); check with him before starting each phase after that.
+It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub Releases as an installer and a portable
+exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
 
 The Mac app is the reference for how a feature behaves and looks. Port its logic into pure, tested C# rather than
 reinventing it, and keep its labels, with the shortcuts spelled out as Windows writes them: "Win+Alt+arrow keys".
@@ -68,6 +68,7 @@ setting, which points Check for Updates elsewhere.
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
 | Screenshot tool | `Snipping/ScreenSnipper` (Win+Alt+P, then the menu's choices), `Snipping/SnipOverlay` (the screen picker), `Snipping/SnipOffer` (the menu after a snip), `Snipping/SnipEditorWindow` (the editors), `Snipping/SnipCanvas` and `Snipping/SnipSidebar` (the editor's snip and tools), `Snipping/SnipRenderer` (shapes, drawn the same on the canvas and in what's copied or saved), `Snipping/SnipOutput` (clipboard and PNG files), `Snipping/TextRecognizer` (Copy Text), `Snipping/ScreenCapture`, `Ui/Toast`, and in Core `Snipping/SnipEditorModel` (the editor's logic, step for step as on the Mac), `Annotation`, `SnipLayout` and `Blur` |
 | GIF recording | `Recording/ScreenRecorder` (Win+Alt+G, through the screen picker, then the menu's choices), `Recording/GifRecording` (takes the pictures and writes the GIF, on threads of their own), `Recording/RecordingControls` (the red line and Stop), and in Core `Recording/GifWriter` (the GIF, frame by frame, as on the Mac) and `RecordingLayout` |
+| Temperature | `Temperature/Thermometer` (reads the thermal zones, graphics cards and drive, off the UI thread), `Ui/TemperatureRows` (the menu's rows and pills), and in Core `Temperature/Heat` (levels, °F, what a row says) and `TemperatureChoice` (which readings the menu shows) |
 | Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
@@ -106,6 +107,14 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
   after. They're taken and written on threads of their own, and when the writing falls behind a picture is left out,
   as on the Mac. A recording waits in `%TEMP%\JaredsWindowsUtils\Recordings` and is copied as a file, which the next
   copy replaces.
+- **Temperatures come without a driver,** as Jared chose on November 9, 2026: only what Windows shares with no
+  administrator. Thermal zones through the performance counters (`\Thermal Zone Information(*)\High Precision
+  Temperature`, in tenths of a kelvin), each graphics card's sensor through `D3DKMTQueryAdapterInfo` with
+  `KMTQAITYPE_ADAPTERPERFDATA`, as Task Manager reads it, and the system drive's through `IOCTL_STORAGE_QUERY_PROPERTY`
+  with `StorageDeviceTemperatureProperty`, on a handle opened with no access. Many desktops share no processor
+  temperature; a real one takes a kernel driver, like PawnIO, and an administrator. GitHub's runners are virtual
+  machines with no sensors, so the self-test checks the reading and the menu, not real numbers. The log's `[temp]`
+  line says what was found.
 - **Copy Text uses `Windows.Media.Ocr`,** through the Windows SDK's .NET projection (the app targets
   `net10.0-windows10.0.19041.0`). It reads only the languages whose text recognition is installed; without any, the app
   says how to add it.

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- The Release workflow raises the last number by itself. Raise the middle one by hand for a new feature. -->
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <!-- Just the version, which Check for Updates reads off the file it downloaded, without a commit hash -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Jared's Cool Windows Utilities App</Product>

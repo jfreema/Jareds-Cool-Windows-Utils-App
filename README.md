@@ -8,7 +8,7 @@
 
 <p align="center">Windows 10 or 11 · 64-bit · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/latest/download/JaredsWindowsUtils.exe">Portable version</a> · <a href="https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases">All versions</a></p>
 
-<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, a switch for snipping the screen with Win+Alt+P, Record GIFs with Win+Alt+G, and About, Check for Updates and Quit buttons"></p>
+<p align="center"><img src="docs/menu.png" width="403" alt="The app's menu: Open at Login, a switch for window snapping with Win+Alt+arrow keys, Thirds on External Displays, a switch for snipping the screen with Win+Alt+P, Record GIFs with Win+Alt+G, the temperatures, with the Processor at 106°F and the Motherboard at 91°F, both Normal, and About, Check for Updates and Quit buttons"></p>
 
 <table>
   <tr>
@@ -16,8 +16,8 @@
     <td width="50%"><b><a href="#screenshot-tool">Screenshot tool</a></b><br>Win+Alt+P snips part of the screen to copy, save or mark up, or copies the text in it. Win+Alt+G records it as a GIF.</td>
   </tr>
   <tr>
-    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: a temperature readout is next.</td>
-    <td width="50%"></td>
+    <td width="50%"><b><a href="#temperature">Temperature</a></b><br>Shows how hot the processor and the motherboard are, in °F, so you can tell when your PC is running hot.</td>
+    <td width="50%"><b><a href="docs/roadmap.md">Coming next</a></b><br>The Mac app's other features, one release at a time: staying awake with the lid closed is next.</td>
   </tr>
 </table>
 
@@ -91,6 +91,34 @@ To change a shape, click it. The one you just drew is picked up already, so you 
 **Record a GIF:** press Win+Alt+G, then drag across part of the screen, or click a window to record all of it. Click off any window for the whole screen, or press Esc to cancel. A red line goes around what's recording: scroll, click and type as you like, then click **Stop** under it or press Win+Alt+G again. It stops by itself after a minute. A menu opens where the pointer is, saying how long and how big the GIF is, with **Copy to Clipboard**, to paste it into Slack, Teams, an email or a document, and **Save…**. It's copied as a file, as File Explorer copies one, so it pastes as a GIF that moves.
 
 GIFs show the pointer, but not the red line or **Stop**. They're 15 frames a second, sized as at 100% display scale, and 1280 pixels across at most. Parts that don't move cost next to nothing, so a smaller area or a shorter recording makes a smaller file. The wait before you start scrolling is cut to a second, and any pause along the way to two, so the GIF doesn't sit still each time it plays.
+
+---
+
+## Temperature
+
+Shows how hot it is inside your PC, in °F, so you can tell when it's running hot or overheating: the processor, and one more, like the motherboard.
+
+**Use it:** click the app's icon. **Temperature**, at the bottom of the menu, has the **Processor**, then the **Motherboard** if your PC shares it, or else the **Graphics Card**, another sensor **Inside Your PC**, or the **Drive** Windows is on. They update every 2 seconds while the menu is open, and the pill beside each says how hot that is. Rest the pointer on one to see where it comes from.
+
+| Pill | Processor and graphics card | What it means |
+|---|---|---|
+| **Cool**, blue | Below 98°F | Idle, or close to it. |
+| **Normal**, green | 98°F to 154°F | Everyday use. |
+| **Warm**, yellow | 155°F to 181°F | Working hard, like on a video call or in a game. Nothing to worry about. |
+| **Hot**, orange | 182°F to 204°F | Near its limit. It may slow down to cool off. |
+| **Overheating**, red | 205°F to 225°F | At its limit, so it slows down to cool off. Give it air, and quit what's working it hard. |
+| **Critical**, red, with a warning sign | Above 225°F | Past the limit. Quit what's running and let it cool. |
+
+A motherboard runs cooler, so its levels start lower: normal from 86°F, warm from 122°F, hot from 140°F, overheating from 158°F and critical above 176°F. A drive is normal from 86°F, warm from 131°F, hot from 158°F, overheating from 167°F and critical above 175°F, or sooner when the drive itself says it's too hot. When Windows is slowing your PC down to cool it off, the processor's pill says **Hot** at least, and resting the pointer on it says so.
+
+**Can't read it:** Windows only knows the temperatures your PC's firmware, graphics card and drive tell it. Laptops often tell it the processor's, but desktops often don't, and reading those takes a driver, which the app doesn't install.
+
+<details>
+<summary>How it works</summary>
+
+The processor's temperature comes from your PC's thermal zones, the sensors its firmware tells Windows about, which Windows shares through its performance counters. A sensor named for the processor goes first, or else the hottest one that doesn't say what it's of, since on most laptops that one follows the processor. The motherboard is a sensor named for it, like the chipset's or the case's. The graphics card's temperature is the one Task Manager shows, from the card's driver, and the drive's comes from the drive. None of it needs an administrator.
+
+</details>
 
 ---
 

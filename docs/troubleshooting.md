@@ -70,6 +70,21 @@ open the folder. The log says what the app did and why something didn't work.
 - **Part of the GIF is black.** Some apps keep their windows out of screenshots and recordings, like streaming video
   with copy protection. Windows' own Snipping Tool sees them the same way.
 
+## Temperature
+
+- **The processor says Can't read it.** Your PC doesn't tell Windows the processor's temperature, as many desktops
+  don't. Reading it takes a driver, which the app doesn't install. The log says what the app found: search it for
+  `[temp]`.
+- **The second reading isn't the motherboard.** The app shows the motherboard when your PC shares it, or else the
+  graphics card, another sensor inside the PC, or the drive Windows is on.
+- **A temperature never changes,** like 82°F. Some PCs' firmware gives a fixed number instead of a sensor's. The app
+  doesn't take a sensor that's below 86°F for the processor unless it's named for it, but shows it as **Inside Your
+  PC** when there's nothing else.
+- **The pill is hotter than the number beside it.** Windows is slowing your PC down to cool it off, or the graphics card
+  or the drive says it's too hot. Rest the pointer on it to see which. Give it air, and quit what's working it hard.
+- **Another app shows a different temperature.** Apps read different sensors. Apps like HWiNFO read the processor's own
+  sensors through a driver, which can read hotter than the firmware's.
+
 ## Updates
 
 - **"Couldn't check for updates."** The app couldn't reach GitHub. Check your internet connection and try again.

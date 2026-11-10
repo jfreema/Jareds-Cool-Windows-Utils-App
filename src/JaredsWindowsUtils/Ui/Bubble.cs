@@ -21,6 +21,8 @@ static class Bubble
     public static readonly SolidColorBrush DeepGreen = Frozen(Color.FromRgb(0x1C, 0x8F, 0x40));
     public static readonly SolidColorBrush Orange = Frozen(Color.FromRgb(0xF7, 0x87, 0x38));
     public static readonly SolidColorBrush Red = Frozen(Color.FromRgb(0xE8, 0x40, 0x40));
+    /// <summary>The Cool pill's</summary>
+    public static readonly SolidColorBrush Sky = Frozen(Color.FromRgb(0x78, 0xB8, 0xFA));
     public static readonly SolidColorBrush White = Frozen(Colors.White);
     /// <summary>A hairline between a card's rows</summary>
     public static readonly SolidColorBrush Divider = Frozen(Color.FromArgb(31, 0x17, 0x1F, 0x3D));

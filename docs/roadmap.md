@@ -74,11 +74,16 @@ Jared asked on November 9, 2026 for two readings, the processor and another insi
 as on the Mac. He chose to go without a driver for now: Windows itself shares only some temperatures, so a PC that
 doesn't share one says so.
 
-- [ ] A Temperature section in the menu: the processor, and one more reading, each in °F with the Mac's pill, from Cool
+- [x] A Temperature section in the menu: the processor, and one more reading, each in °F with the Mac's pill, from Cool
       to Critical
-- [ ] What Windows shares without a driver or an administrator: the firmware's thermal zones, the graphics card's
+- [x] What Windows shares without a driver or an administrator: the firmware's thermal zones, the graphics card's
       temperature, as Task Manager shows it, and the drive's
-- [ ] Released and tried
+- [x] The motherboard when the PC shares it, or else the graphics card, another sensor inside, or the drive
+- [x] Levels of their own for the motherboard and the drive, which run cooler; Hot at least while Windows slows the PC
+      down to cool it
+- [x] The self-test reads them and checks the menu on GitHub's Windows machines, which have no sensors to read
+- [ ] Released
+- [ ] Tried on Jared's Windows PC
 
 ## 0.5.0: Stay awake with the lid closed
 

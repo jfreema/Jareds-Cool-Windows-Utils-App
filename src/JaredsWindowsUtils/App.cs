@@ -2,9 +2,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using JaredsWindowsUtils.Core;
+using JaredsWindowsUtils.Core.Temperature;
 using JaredsWindowsUtils.Interop;
 using JaredsWindowsUtils.Snapping;
 using JaredsWindowsUtils.Snipping;
+using JaredsWindowsUtils.Temperature;
 using JaredsWindowsUtils.Tray;
 using JaredsWindowsUtils.Ui;
 using static JaredsWindowsUtils.Interop.Native;
@@ -24,6 +26,13 @@ sealed class App : Application
     WindowSnapper snapper = null!;
     ScreenSnipper snipper = null!;
     Updater updater = null!;
+    Thermometer thermometer = null!;
+    /// <summary>Read again every 2 seconds while the menu's open, as on the Mac</summary>
+    readonly DispatcherTimer temperatureTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    TemperatureReading? temperatures;
+    /// <summary>Where the menu's temperatures came from last, so the log says when that changes</summary>
+    string? temperatureSources;
+    bool readingTemperatures;
     MenuWindow? menu;
     /// <summary>When the menu last closed, by Environment.TickCount64</summary>
     long menuClosedAt;
@@ -40,6 +49,9 @@ sealed class App : Application
     internal ScreenSnipper Snipper => snipper;
     internal TrayIcon Tray => tray;
     internal MenuWindow? Menu => menu;
+    internal TemperatureReading? Temperatures => temperatures;
+    /// <summary>For the self-test's pictures of the menu: shown instead of what was read</summary>
+    internal TemperatureReport? PictureTemperatures { get; set; }
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -63,6 +75,9 @@ sealed class App : Application
         snipper.Start();
         updater = new Updater(settings, Quit, ReadyToQuit);
         updater.BusyChanged += RefreshMenu;
+        thermometer = new Thermometer();
+        temperatureTimer.Tick += (_, _) => ReadTemperatures();
+        ReadTemperatures();
         tray = new TrayIcon(messages);
         tray.Clicked += ToggleMenu;
         tray.Show();
@@ -139,12 +154,15 @@ sealed class App : Application
         shortcuts.Rehook();
         snapper.Refresh();
         snipper.Refresh();
+        ReadTemperatures();
+        temperatureTimer.Start();
         var window = new MenuWindow();
         window.Toggled += Flip;
         window.Command += Run;
         window.Closed += (_, _) =>
         {
             menu = null;
+            temperatureTimer.Stop();
             menuClosedAt = Environment.TickCount64;
             if (afterMenuCloses is { } work)
             {
@@ -171,9 +189,39 @@ sealed class App : Application
                 : "Windows didn't let the app watch for Win+Alt+P"
             : null,
         RecordGifs: snipper.RecordsGifs,
-        IsCheckingForUpdates: updater.IsBusy);
+        IsCheckingForUpdates: updater.IsBusy,
+        Temperatures: PictureTemperatures ?? temperatures?.Report);
 
     void RefreshMenu() => menu?.Update(State());
+
+    /// <summary>In the background, then into the menu</summary>
+    internal async void ReadTemperatures()
+    {
+        if (readingTemperatures || hasQuit) return;
+        readingTemperatures = true;
+        try
+        {
+            var reading = await thermometer.ReadAsync();
+            if (hasQuit) return;
+            temperatures = reading;
+            var report = reading.Report;
+            string sources = $"{report.Processor.Description}|{report.Other.Part}|{report.Other.Description}";
+            if (sources != temperatureSources)
+            {
+                temperatureSources = sources;
+                Log.Info("temp", $"Showing {report}. Found {reading.Sources}");
+            }
+            RefreshMenu();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Quitting
+        }
+        finally
+        {
+            readingTemperatures = false;
+        }
+    }
 
     /// <summary>Runs once the menu has closed, or right away if it isn't open</summary>
     void CloseMenu(Action then)
@@ -255,6 +303,7 @@ sealed class App : Application
         if (hasQuit) return;
         hasQuit = true;
         menu?.Dismiss();
+        temperatureTimer.Stop();
         tray.Dispose();
         snipper.Dispose();
         snapper.Dispose();

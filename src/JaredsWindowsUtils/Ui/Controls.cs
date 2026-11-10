@@ -14,6 +14,8 @@ enum GlyphKind
     Bolt, CheckCircle, Circle, Warning, Check,
     // The snip editor's tools and buttons
     Box, Line, Arrow, Highlighter, Drop, Letters, Eraser, Undo, Redo,
+    // The temperature's pills
+    Snowflake, ThermometerLow, ThermometerMedium, ThermometerHigh, Flame,
 }
 
 static class Glyphs
@@ -113,7 +115,71 @@ static class Glyphs
                 context.DrawGeometry(null, Pen(brush, s * 0.12), new PathGeometry([turn]));
                 context.DrawGeometry(null, Pen(brush, s * 0.12), Polyline(M(0.4, 0.18), M(0.24, 0.34), M(0.4, 0.5)));
                 break;
+            case GlyphKind.Snowflake:
+                // Three lines through the middle, each end with a V on it
+                var flake = Pen(brush, s * 0.1);
+                for (int arm = 0; arm < 6; arm++)
+                {
+                    double angle = Math.PI / 2 + arm * Math.PI / 3;
+                    Point Along(double distance, double turn = 0) => P(0.5 + distance * Math.Cos(angle + turn),
+                        0.5 - distance * Math.Sin(angle + turn));
+                    context.DrawLine(flake, P(0.5, 0.5), Along(0.45));
+                    var fork = Along(0.27);
+                    context.DrawGeometry(null, flake, Polyline(
+                        new Point(fork.X + 0.14 * s * Math.Cos(angle + 0.8), fork.Y - 0.14 * s * Math.Sin(angle + 0.8)),
+                        fork,
+                        new Point(fork.X + 0.14 * s * Math.Cos(angle - 0.8), fork.Y - 0.14 * s * Math.Sin(angle - 0.8))));
+                }
+                break;
+            case GlyphKind.ThermometerLow or GlyphKind.ThermometerMedium or GlyphKind.ThermometerHigh:
+                // A tube on a bulb, filled up to how hot
+                var tube = new CombinedGeometry(GeometryCombineMode.Union,
+                    new RectangleGeometry(new Rect(P(0.37, 0.05), P(0.63, 0.66)), s * 0.13, s * 0.13),
+                    new EllipseGeometry(P(0.5, 0.75), s * 0.21, s * 0.21));
+                context.DrawGeometry(null, Pen(brush, s * 0.09), tube);
+                double top = kind switch
+                {
+                    GlyphKind.ThermometerLow => 0.56,
+                    GlyphKind.ThermometerMedium => 0.38,
+                    _ => 0.2,
+                };
+                context.DrawEllipse(brush, null, P(0.5, 0.75), s * 0.11, s * 0.11);
+                context.DrawRoundedRectangle(brush, null, new Rect(P(0.455, top), P(0.545, 0.75)), s * 0.045, s * 0.045);
+                break;
+            case GlyphKind.Flame:
+                context.DrawGeometry(brush, null, Flame(P, inner: false));
+                context.DrawGeometry(knockout ?? Bubble.White, null, Flame(P, inner: true));
+                break;
         }
+    }
+
+    /// <summary>A flame, its tip leaning right, or the small one inside it, cut out of it</summary>
+    static Geometry Flame(Func<double, double, Point> P, bool inner)
+    {
+        var figure = inner
+            ? new PathFigure { StartPoint = P(0.5, 0.92), IsClosed = true, IsFilled = true }
+            : new PathFigure { StartPoint = P(0.55, 0.03), IsClosed = true, IsFilled = true };
+        void Curve(double x1, double y1, double x2, double y2, double x, double y) =>
+            figure.Segments.Add(new BezierSegment(P(x1, y1), P(x2, y2), P(x, y), true));
+        if (inner)
+        {
+            Curve(0.4, 0.92, 0.34, 0.85, 0.35, 0.76);
+            Curve(0.36, 0.67, 0.44, 0.62, 0.47, 0.52);
+            Curve(0.57, 0.6, 0.66, 0.68, 0.65, 0.78);
+            Curve(0.64, 0.86, 0.58, 0.92, 0.5, 0.92);
+        }
+        else
+        {
+            Curve(0.6, 0.2, 0.84, 0.32, 0.84, 0.62);
+            Curve(0.84, 0.84, 0.69, 0.97, 0.5, 0.97);
+            Curve(0.31, 0.97, 0.16, 0.85, 0.16, 0.65);
+            Curve(0.16, 0.5, 0.24, 0.41, 0.3, 0.34);
+            Curve(0.31, 0.43, 0.35, 0.48, 0.4, 0.5);
+            Curve(0.37, 0.33, 0.43, 0.16, 0.55, 0.03);
+        }
+        var geometry = new PathGeometry([figure]);
+        geometry.Freeze();
+        return geometry;
     }
 
     /// <summary>A drop: a circle low in the box, drawn up to a point at the top</summary>
