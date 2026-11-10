@@ -9,7 +9,7 @@ on November 9. Tick items off here as they ship.
 | 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.0) November 2, 2026 |
 | 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.2.0) November 2, 2026 |
 | 0.3.0 | [Record GIFs](#030-record-gifs) with the screenshot tool | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.3.0) November 9, 2026 |
-| 0.4.0 | [Temperature](#040-temperature) | In progress |
+| 0.4.0 | [Temperature](#040-temperature) | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.4.0) November 10, 2026 |
 | 0.5.0 | [Stay awake with the lid closed](#050-stay-awake-with-the-lid-closed) | Not started |
 | 0.6.0 | [Keyboard cleaning](#060-keyboard-cleaning) | Not started |
 | 0.7.0 | [Guitar tuner](#070-guitar-tuner) | Not started |
@@ -82,7 +82,7 @@ doesn't share one says so.
 - [x] Levels of their own for the motherboard and the drive, which run cooler; Hot at least while Windows slows the PC
       down to cool it
 - [x] The self-test reads them and checks the menu on GitHub's Windows machines, which have no sensors to read
-- [ ] Released
+- [x] Released
 - [ ] Tried on Jared's Windows PC
 
 ## 0.5.0: Stay awake with the lid closed
