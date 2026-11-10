@@ -13,8 +13,6 @@ public interface ISensors
 
     IReadOnlyList<GraphicsTemperature> Graphics();
 
-    DriveTemperature? Drive();
-
     /// <summary>What there is to say about the last time a source was asked, for the log: why it had nothing, or what
     /// wasn't asked</summary>
     string? Note(TemperatureSource source);
@@ -23,11 +21,10 @@ public interface ISensors
 /// <summary>Everything read at once: what each source had, and what the menu shows from it</summary>
 /// <param name="Sources">What was found and how long it took, for the log and the self-test</param>
 public sealed record TemperatureReading(IReadOnlyList<ThermalZone> Zones, IReadOnlyList<GraphicsTemperature> Graphics,
-    DriveTemperature? Drive, TemperatureReport Report, string Sources);
+    TemperatureReport Report, string Sources);
 
-/// <summary>Reads the temperatures every 2 minutes at most, each source only if the guard lets it be asked, and the
-/// drive only when nothing else gives the second reading. Read off the UI thread, since a card or a drive can take a
-/// moment.</summary>
+/// <summary>Reads the temperatures every 2 minutes at most, each source only if the guard lets it be asked. Read off
+/// the UI thread, since a source can take a moment.</summary>
 public sealed class Thermometer
 {
     /// <summary>How often the temperatures are read at most, which they are only while the menu is open. Jared set
@@ -53,7 +50,6 @@ public sealed class Thermometer
     /// <summary>What each said last, which stands while it isn't due to be asked again</summary>
     IReadOnlyList<ThermalZone> zones = [];
     IReadOnlyList<GraphicsTemperature> graphics = [];
-    DriveTemperature? drive;
 
     /// <param name="clock">The guard's</param>
     /// <param name="every">How often it reads at most: every 2 minutes unless a test says otherwise</param>
@@ -86,12 +82,8 @@ public sealed class Thermometer
             asked.Clear();
             zones = Ask(TemperatureSource.Zones, sensors.Zones, zones, []);
             graphics = Ask(TemperatureSource.Graphics, sensors.Graphics, graphics, []);
-            // The drive is asked only when it would be shown
-            bool wanted = TemperatureChoice.WantsDrive(zones, graphics);
-            if (wanted) drive = Ask(TemperatureSource.Drive, sensors.Drive, drive, null);
-            var shown = wanted ? drive : null;
-            var report = TemperatureChoice.Choose(zones, graphics, shown, guard.LeftOut);
-            return last = new TemperatureReading(zones, graphics, shown, report, Describe(wanted));
+            var report = TemperatureChoice.Choose(zones, graphics, guard.LeftOut);
+            return last = new TemperatureReading(zones, graphics, report, Describe());
         }
     }
 
@@ -100,7 +92,7 @@ public sealed class Thermometer
     {
         if (!asks.Contains(source)) return none;
         if (abandoned) return last;
-        if (!guard.Begin(source)) return guard.IsLeftOut(source) ? none : last;
+        if (!guard.Begin(source, preparing: true)) return guard.IsLeftOut(source) ? none : last;
         var value = none;
         TimeSpan opened = TimeSpan.Zero, took = TimeSpan.Zero;
         string? failure = null;
@@ -110,13 +102,17 @@ public sealed class Thermometer
             sensors.Prepare(source);
             var ready = clock();
             opened = ready - start;
-            try
+            // Not if it was given up on, or the app told to quit, while getting ready
+            if (guard.Ready(source))
             {
-                value = read();
-            }
-            finally
-            {
-                took = clock() - ready;
+                try
+                {
+                    value = read();
+                }
+                finally
+                {
+                    took = clock() - ready;
+                }
             }
         }
         catch (Exception exception)
@@ -132,7 +128,7 @@ public sealed class Thermometer
         return guard.IsLeftOut(source) ? none : value;
     }
 
-    string Describe(bool driveWanted)
+    string Describe()
     {
         static string C(double celsius) => celsius.ToString("0.0", CultureInfo.InvariantCulture) + "°C";
         string zoneText = zones.Count > 0
@@ -143,14 +139,9 @@ public sealed class Thermometer
             ? string.Join(", ", graphics.Select(g => $"{g.Name} {C(g.Celsius)}"
                 + (g.SlowsAt is { } at ? $", slows at {C(at)}" : "")))
             : "none with a temperature";
-        string driveText = drive is { } d
-            ? $"{d.Name} {C(d.Celsius)}" + (d.Warning is { } warning ? $", warning at {C(warning)}" : "")
-                + (d.Critical is { } critical ? $", critical at {C(critical)}" : "")
-            : "none";
         return string.Join("; ",
             Part("thermal zones", TemperatureSource.Zones, zoneText),
-            Part("graphics", TemperatureSource.Graphics, cardText),
-            driveWanted ? Part("drive", TemperatureSource.Drive, driveText) : "drive: not needed");
+            Part("graphics", TemperatureSource.Graphics, cardText));
     }
 
     string Part(string label, TemperatureSource source, string text)

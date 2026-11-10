@@ -1,24 +1,20 @@
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using JaredsWindowsUtils.Core.Temperature;
-using Microsoft.Win32.SafeHandles;
 using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Temperature;
 
 /// <summary>The temperatures Windows shares without a driver or an administrator: the firmware's ACPI thermal zones
-/// through Windows' performance counters, each graphics card's own sensor as Task Manager reads it, and the drive
-/// Windows is on. A desktop's processor and motherboard often take a driver to read, which the app doesn't use
-/// (Jared's choice, November 9, 2026).
+/// through Windows' performance counters, and each graphics card's own sensor as Task Manager reads it. A desktop's
+/// processor and motherboard often take a driver to read, which the app doesn't use (Jared's choice, November 9,
+/// 2026).
 ///
-/// <para>Only what's safe to ask is asked, since Jared's PC seemed to lock up with 0.4.0's menu open (November 10,
-/// 2026). The thermal zones are numbers Windows already has. A graphics card is asked only if it's real, awake
-/// whenever the PC is, and its driver is new enough to say: asking a laptop's second card would wake it, which can
-/// freeze the screen for a moment each time. The drive is asked only if it's an NVMe drive, which answers on the side:
-/// a SATA drive stops what it's doing to answer, and some take a while. <see cref="SafeToAsk"/> decides both. The
-/// <see cref="Thermometer"/> asks the drive only when nothing else gives the second reading, and the
-/// <see cref="SourceGuard"/> stops asking anything that's slow.</para></summary>
+/// <para>No drive is asked for its temperature, and there's no code here that could: that question froze Jared's PC
+/// (November 10, 2026, <see cref="SafeToAsk"/>). Of what's here the app asks only the thermal zones, and the
+/// <see cref="SourceGuard"/> stops asking anything that's slow or that the PC stopped on. A graphics card would be
+/// asked only if it's real, awake whenever the PC is, and its driver is new enough to say: asking a laptop's second
+/// card would wake it, which can freeze the screen for a moment each time.</para></summary>
 sealed class WindowsSensors : ISensors, IDisposable
 {
     const string ZoneCounters = @"\Thermal Zone Information(*)\";
@@ -34,10 +30,6 @@ sealed class WindowsSensors : ISensors, IDisposable
     /// <summary>By the card's LUID, asked for once</summary>
     readonly Dictionary<long, string> cardNames = [];
     string? cardNote;
-    int? disk;
-    string? diskName;
-    int diskBus;
-    string? driveNote;
 
     /// <summary>Time that stands still while the PC sleeps, for the guard: a question asked as the PC goes to sleep
     /// isn't a slow one</summary>
@@ -53,8 +45,7 @@ sealed class WindowsSensors : ISensors, IDisposable
     public string? Note(TemperatureSource source) => source switch
     {
         TemperatureSource.Zones => zoneNote,
-        TemperatureSource.Graphics => cardNote,
-        _ => driveNote,
+        _ => cardNote,
     };
 
     // Thermal zones
@@ -77,7 +68,8 @@ sealed class WindowsSensors : ISensors, IDisposable
         if (precise == IntPtr.Zero && plain == IntPtr.Zero) zoneNote = $"no counters, 0x{plainStatus:X8}";
     }
 
-    /// <summary>What Windows last heard from the firmware: it doesn't ask the sensors for this</summary>
+    /// <summary>Each zone's temperature. Collecting the counters has Windows ask the firmware for every zone's again,
+    /// and wait for the answers: it doesn't hand out what it heard last.</summary>
     public IReadOnlyList<ThermalZone> Zones()
     {
         OpenZones();
@@ -254,115 +246,6 @@ sealed class WindowsSensors : ISensors, IDisposable
             PrivateDriverDataSize = (uint)size,
         };
         return D3DKMTQueryAdapterInfo(ref query) == 0;
-    }
-
-    // The drive
-
-    public DriveTemperature? Drive()
-    {
-        if ((disk ??= SystemDisk()) is not { } number)
-        {
-            driveNote = "couldn't tell which drive Windows is on";
-            return null;
-        }
-        using var device = Open($@"\\.\PhysicalDrive{number}");
-        if (device.IsInvalid)
-        {
-            driveNote = $"couldn't open drive {number}, error {Marshal.GetLastWin32Error()}";
-            return null;
-        }
-        if (diskName == null)
-        {
-            if (Describe(device) is not { } described)
-            {
-                driveNote = $"drive {number} doesn't say what it is";
-                return null;
-            }
-            (diskName, diskBus) = described;
-        }
-        // Windows knows this much without asking the drive. Only an NVMe drive is asked how hot it is.
-        if (SafeToAsk.WhyNotDrive(diskBus) is { } why)
-        {
-            driveNote = $"{diskName} isn't asked, since {why}";
-            return null;
-        }
-        const int size = 1024;
-        var buffer = Marshal.AllocHGlobal(size);
-        try
-        {
-            var question = new STORAGE_PROPERTY_QUERY { PropertyId = StorageDeviceTemperatureProperty };
-            if (!DeviceIoControl(device, IOCTL_STORAGE_QUERY_PROPERTY, ref question,
-                    Marshal.SizeOf<STORAGE_PROPERTY_QUERY>(), buffer, size, out int returned, IntPtr.Zero))
-            {
-                driveNote = $"{diskName} doesn't say its temperature, error {Marshal.GetLastWin32Error()}";
-                return null;
-            }
-            // The header, then a reading of 16 bytes each, the drive's own first
-            if (returned < 24 + 16 || Marshal.ReadInt16(buffer, 12) == 0)
-            {
-                driveNote = $"{diskName} has no temperature";
-                return null;
-            }
-            short critical = Marshal.ReadInt16(buffer, 8);
-            short warning = Marshal.ReadInt16(buffer, 10);
-            short celsius = Marshal.ReadInt16(buffer, 24 + 2);
-            driveNote = null;
-            return new DriveTemperature(diskName, celsius, warning > 0 ? warning : null, critical > 0 ? critical : null);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
-    }
-
-    /// <summary>Asking a device about itself needs no access to it, so no administrator</summary>
-    static SafeFileHandle Open(string path) =>
-        CreateFile(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, IntPtr.Zero, OPEN_EXISTING, 0, IntPtr.Zero);
-
-    /// <summary>The number of the disk Windows is on</summary>
-    static int? SystemDisk()
-    {
-        var root = Path.GetPathRoot(Environment.SystemDirectory);
-        if (string.IsNullOrEmpty(root)) return null;
-        using var volume = Open(@"\\.\" + root.TrimEnd('\\'));
-        if (volume.IsInvalid) return null;
-        return DeviceIoControl(volume, IOCTL_STORAGE_GET_DEVICE_NUMBER, IntPtr.Zero, 0, out var number,
-            Marshal.SizeOf<STORAGE_DEVICE_NUMBER>(), out _, IntPtr.Zero)
-            ? (int)number.DeviceNumber
-            : null;
-    }
-
-    /// <summary>Its maker and model, like Samsung SSD 980 PRO 1TB, and how it's connected (STORAGE_BUS_TYPE). Windows
-    /// has both from when it found the drive.</summary>
-    static (string Name, int Bus)? Describe(SafeFileHandle device)
-    {
-        const int size = 1024;
-        var buffer = Marshal.AllocHGlobal(size);
-        try
-        {
-            var question = new STORAGE_PROPERTY_QUERY { PropertyId = StorageDeviceProperty };
-            if (!DeviceIoControl(device, IOCTL_STORAGE_QUERY_PROPERTY, ref question,
-                    Marshal.SizeOf<STORAGE_PROPERTY_QUERY>(), buffer, size, out int returned, IntPtr.Zero)
-                || returned < 36)
-                return null;
-            string? Text(int offset) => offset > 0 && offset < returned
-                ? Marshal.PtrToStringAnsi(buffer + offset)?.Trim()
-                : null;
-            var vendor = Text(Marshal.ReadInt32(buffer, 12));
-            var product = Text(Marshal.ReadInt32(buffer, 16));
-            int bus = Marshal.ReadInt32(buffer, 28);
-            string name = string.IsNullOrEmpty(product)
-                ? "the drive"
-                : string.IsNullOrEmpty(vendor) || vendor is "NVMe" or "ATA"
-                    || product.StartsWith(vendor, StringComparison.OrdinalIgnoreCase)
-                    ? product
-                    : $"{vendor} {product}";
-            return (name, bus);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
-        }
     }
 
     public void Dispose()

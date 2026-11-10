@@ -18,19 +18,27 @@ static partial class SelfTest
         new TemperatureRow(HeatPart.Processor, 41, "The processor, from the PC's sensor CPUZ"),
         new TemperatureRow(HeatPart.Motherboard, 33, "The motherboard, from the PC's sensor PCHZ"));
 
+    /// <summary>On one of GitHub's machines, which the Check workflow runs this on. Anywhere else the self-test asks
+    /// no more of the PC than the app itself does.</summary>
+    static bool OnGitHub => Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
     /// <summary>Reads what this PC shares, twice, then checks the menu shows it, when it's asked for and what happens
     /// when a source makes trouble, and draws every level's pill. GitHub's runners are virtual machines, with no
     /// sensors to read, so they show Can't read it.</summary>
     static async Task Temperatures(App app, string folder, Action<string, bool, string> add,
         Dictionary<string, string> facts)
     {
+        // The graphics cards too, which the app itself doesn't ask (SafeToAsk.Sources), so that their code stays
+        // tried: but only on a machine of GitHub's. Asking a PC's parts is what froze Jared's, and a self-test run on
+        // somebody's PC must not be how the next one happens.
+        bool everySource = OnGitHub;
         using (var sensors = new WindowsSensors())
         {
-            var guard = new SourceGuard(new Settings(), null, WindowsSensors.Clock);
-            // Every source, though the app itself asks only the thermal zones for now (SafeToAsk.Sources), so that
-            // the rest stays tried here, on a machine of GitHub's
+            // With a file that says what's being asked, as the app has, in case this is the PC that stops
+            var guard = new SourceGuard(new Settings(), Path.Combine(folder, "temperature-asking.txt"),
+                WindowsSensors.Clock);
             var thermometer = new Thermometer(guard, WindowsSensors.Clock, sensors, every: TimeSpan.Zero,
-                asks: SafeToAsk.EverySource);
+                asks: everySource ? SafeToAsk.EverySource : SafeToAsk.Sources);
             var reading = await WithTimeout(thermometer.ReadAsync(), 20000);
             add("reading the temperatures works", reading != null, reading?.Sources ?? "took over 20 seconds");
             if (reading == null) return;
@@ -41,16 +49,20 @@ static partial class SelfTest
                 again?.Sources ?? "took over 20 seconds");
             add("each source answered fast enough to be asked again", guard.LeftOut.Count == 0,
                 guard.LeftOut.Count == 0 ? "none left out" : string.Join(", ", guard.LeftOut));
-            string cards = sensors.Note(TemperatureSource.Graphics) ?? "every card was asked and answered";
-            facts["graphics cards"] = cards;
-            add("each graphics card is asked, or left alone for a reason",
-                !cards.Contains("didn't list") && !cards.Contains("listed no") && !cards.Contains("what kind it is"),
-                cards);
-            string drive = sensors.Note(TemperatureSource.Drive)
-                ?? (again?.Drive is { } answered ? $"{answered.Name} answered" : "not needed");
-            facts["drive"] = drive;
-            add("the drive says what it is before it's asked how hot",
-                again?.Drive != null || drive.Contains("bus type") || drive == "not needed", drive);
+            if (everySource)
+            {
+                string cards = sensors.Note(TemperatureSource.Graphics) ?? "every card was asked and answered";
+                facts["graphics cards"] = cards;
+                add("each graphics card is asked, or left alone for a reason",
+                    !cards.Contains("didn't list") && !cards.Contains("listed no") && !cards.Contains("what kind it is"),
+                    cards);
+            }
+            else
+            {
+                add("away from GitHub, only what the app asks is asked",
+                    reading.Sources.Contains("graphics: not asked in this version"), reading.Sources);
+            }
+            guard.Close();
         }
 
         Marker(add);
@@ -73,12 +85,11 @@ static partial class SelfTest
             && AutomationProperties.GetItemStatus(rows[0]) == report.Processor.Spoken,
             $"{rows[0].Title}: {AutomationProperties.GetItemStatus(rows[0])}");
         add("and one more inside the PC",
-            rows[1].Title is "Motherboard" or "Graphics Card" or "Inside Your PC" or "Drive"
+            rows[1].Title is "Motherboard" or "Graphics Card" or "Inside Your PC"
             && rows[1].Row == report.Other && AutomationProperties.GetItemStatus(rows[1]) == report.Other.Spoken,
             $"{rows[1].Title}: {AutomationProperties.GetItemStatus(rows[1])}");
-        add("the app itself asks only the thermal zones for now",
-            read.Sources.Contains("graphics: not asked in this version")
-            && (read.Sources.Contains("drive: not asked in this version") || read.Sources.Contains("drive: not needed")),
+        add("the app itself asks only the thermal zones, and there's no drive to ask",
+            read.Sources.Contains("graphics: not asked in this version") && !read.Sources.Contains("drive:"),
             read.Sources);
         add("each says where it comes from when you point at it",
             rows[0].ToolTip is string first && first == report.Processor.Explanation
@@ -202,8 +213,6 @@ static partial class SelfTest
             Interlocked.Increment(ref graphicsAsked);
             return [new GraphicsTemperature("Stand-in card", 50)];
         }
-
-        public DriveTemperature? Drive() => null;
 
         public string? Note(TemperatureSource source) => "a stand-in";
     }

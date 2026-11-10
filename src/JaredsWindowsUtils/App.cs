@@ -353,16 +353,28 @@ sealed class App : Application
     {
         if (hasQuit) return;
         hasQuit = true;
-        menu?.Dismiss();
-        temperatureTimer.Stop();
-        temperatureGuard.Close();
-        tray.Dispose();
-        snipper.Dispose();
-        snapper.Dispose();
-        shortcuts.Dispose();
-        messages.Dispose();
-        Log.Info("app", "Quit");
-        Shutdown();
+        // Whatever goes wrong while tidying up, the app ends: a copy left without its tray icon would go on holding
+        // the single-instance lock
+        try
+        {
+            menu?.Dismiss();
+            temperatureTimer.Stop();
+            temperatureGuard.Close();
+            tray.Dispose();
+            snipper.Dispose();
+            snapper.Dispose();
+            shortcuts.Dispose();
+            messages.Dispose();
+            Log.Info("app", "Quit");
+        }
+        catch (Exception exception)
+        {
+            Log.Error("app", "Couldn't tidy up while quitting", exception);
+        }
+        finally
+        {
+            Shutdown();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

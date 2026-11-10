@@ -68,7 +68,7 @@ setting, which points Check for Updates elsewhere.
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
 | Screenshot tool | `Snipping/ScreenSnipper` (Win+Alt+P, then the menu's choices), `Snipping/SnipOverlay` (the screen picker), `Snipping/SnipOffer` (the menu after a snip), `Snipping/SnipEditorWindow` (the editors), `Snipping/SnipCanvas` and `Snipping/SnipSidebar` (the editor's snip and tools), `Snipping/SnipRenderer` (shapes, drawn the same on the canvas and in what's copied or saved), `Snipping/SnipOutput` (clipboard and PNG files), `Snipping/TextRecognizer` (Copy Text), `Snipping/ScreenCapture`, `Ui/Toast`, and in Core `Snipping/SnipEditorModel` (the editor's logic, step for step as on the Mac), `Annotation`, `SnipLayout` and `Blur` |
 | GIF recording | `Recording/ScreenRecorder` (Win+Alt+G, through the screen picker, then the menu's choices), `Recording/GifRecording` (takes the pictures and writes the GIF, on threads of their own), `Recording/RecordingControls` (the red line and Stop), and in Core `Recording/GifWriter` (the GIF, frame by frame, as on the Mac) and `RecordingLayout` |
-| Temperature | `Temperature/WindowsSensors` (asks Windows for the thermal zones, graphics cards and drive), `Ui/TemperatureRows` (the menu's rows and pills), and in Core `Temperature/Thermometer` (reads them once in 2 minutes at most, off the UI thread), `SourceGuard` (stops asking a source that makes trouble), `SafeToAsk` (which cards and drives are asked at all), `Heat` (levels, °F, what a row says) and `TemperatureChoice` (which readings the menu shows) |
+| Temperature | `Temperature/WindowsSensors` (asks Windows for the thermal zones and the graphics cards; no drive), `Ui/TemperatureRows` (the menu's rows and pills), and in Core `Temperature/Thermometer` (reads them once in 2 minutes at most, off the UI thread), `SourceGuard` (stops asking a source that makes trouble), `SafeToAsk` (which sources and cards are asked at all), `Heat` (levels, °F, what a row says) and `TemperatureChoice` (which readings the menu shows) |
 | Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
@@ -110,27 +110,37 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
 - **Temperatures come without a driver,** as Jared chose on November 9, 2026: only what Windows shares with no
   administrator. Thermal zones through the performance counters (`\Thermal Zone Information(*)\High Precision
   Temperature`, in tenths of a kelvin), each graphics card's sensor through `D3DKMTQueryAdapterInfo` with
-  `KMTQAITYPE_ADAPTERPERFDATA`, as Task Manager reads it, and the system drive's through `IOCTL_STORAGE_QUERY_PROPERTY`
-  with `StorageDeviceTemperatureProperty`, on a handle opened with no access. Many desktops share no processor
+  `KMTQAITYPE_ADAPTERPERFDATA`, as Task Manager reads it. **No drive is asked, and 0.4.2 deleted the code that did it**
+  (see below). Many desktops share no processor
   temperature; a real one takes a kernel driver, like PawnIO, and an administrator. GitHub's runners are virtual
   machines with no sensors, so the self-test checks the reading and the menu, not real numbers. The log's `[temp]`
   line says what was found, how long each source took, and what wasn't asked and why.
-- **Asking for a temperature can freeze a PC.** Jared's froze with 0.4.0's menu open (November 10, 2026) and stayed
-  frozen until he turned it off. 0.4.0 asked every source as it started and every 2 seconds with the menu open. Which
-  one did it isn't known yet, so **since 0.4.1 the app asks only the thermal zones** (`SafeToAsk.Sources`), numbers
-  Windows already has, and neither the graphics cards nor the drive. Their code stays, and the self-test tries it on
-  GitHub's machines (`SafeToAsk.EverySource`). Put one back only once Jared's log, or he, says which it was, and ask
-  him first. The rest of what 0.4.1 does is the rule from now on. Nothing is asked until the menu
-  opens, then once in 2 minutes at most and never while it's closed (`Thermometer.Every`, Jared's number: "check only
-  every 10 seconds on the mac and once every 2 minutes on the windows app"); the menu's own 2-second timer only looks
-  whether a reading is due. `SafeToAsk` leaves alone a graphics card that may be asleep (a laptop's second card, or one
-  that powers down when idle and isn't the card the PC starts up on), since asking wakes it, and any drive that isn't
-  NVMe, since a SATA or USB drive stops what it's doing to answer; the drive is asked only when nothing else gives the
-  second reading. `SourceGuard` writes which source is being asked into `temperature-asking.txt` beside the settings,
-  through to the disk, before every question: found still saying so as the app starts, that source isn't asked again.
-  An answer that takes 250 ms gets its source asked once in 10 minutes; one that takes a second, or never comes (30
-  seconds, or 5 when the app is told to quit), gets it left out for good, under `temperatureLeftOut` in the settings,
-  and the row's tooltip says so. Taking that setting out has the app ask again. Don't add a source, or ask more often,
+- **Asking for a temperature can freeze a PC, and a drive must never be asked.** Jared's PC (a Dell OptiPlex 5070,
+  both drives behind Intel RST's iaStorAC 17.11.3.1010, Windows on the NVMe one) stopped writing to its disk within
+  seconds of 0.4.0 starting after an update (November 9, 2026) and stayed frozen until he turned it off. 0.4.0 asked
+  every source as it started, on a thread-pool thread, before the "Started" log line. **Very likely cause, not
+  reproduced: the drive's `IOCTL_STORAGE_QUERY_PROPERTY` with `StorageDeviceTemperatureProperty` (52).** Windows'
+  class driver passes it to the controller's driver, here Intel's closed one. Precedent: another app's identical
+  request froze three RST PCs, one with this driver version and an NVMe boot drive
+  (github.com/Niko1221/Strata/issues/4661), and its "NVMe bus only" rule didn't spare the last, so a bus type isn't a
+  safe test. The graphics cards (a few percent) and the thermal zones (1 in 50 on his Dell, whose `TZ00` is Intel's
+  reference table returning a constant 27.85°C) are unlikely. 0.4.1 asked only the thermal zones; **0.4.2 removed the
+  drive code for good** (`TemperatureSource.Drive`, `DriveTemperature`, the `PhysicalDrive` calls). If a drive is ever
+  wanted: only where the controller's driver is Microsoft's stornvme (by driver name), only on Jared's say-so, and
+  tried first on a PC that isn't his. The graphics cards stay off too (`SafeToAsk.Sources` is the thermal zones; the
+  self-test asks the cards only when `GITHUB_ACTIONS` is set, with a marker file). **Never run `--self-test` or
+  `scripts/try-on-windows.ps1` on Jared's PC.** Reading the thermal zone counters isn't free: every
+  `PdhCollectQueryData` makes Windows re-ask the firmware for each zone and wait, so it is not "numbers Windows
+  already has". Rules that stay: nothing is asked until the menu opens, then once in 2 minutes at most and never while
+  it's closed (`Thermometer.Every`, Jared's number: "check only every 10 seconds on the mac and once every 2 minutes
+  on the windows app"). `SafeToAsk` leaves alone a graphics card that may be asleep. `SourceGuard` writes which
+  source is being asked into `temperature-asking.txt` beside the settings, through to the disk, before every
+  question; found still saying so as the app starts, that source isn't asked again. Since 0.4.2 the file keeps
+  naming a source until `settings.json` has it (`Settings.Save` writes through and returns whether it worked), and
+  the log says "Asking X for the first time" before the first question; every log line is written through to the
+  disk. An answer that takes 250 ms gets its source asked once in 10 minutes; one that takes a second, or never
+  comes (30 seconds, or 5 when the app is told to quit), gets it left out for good, under `temperatureLeftOut`, and
+  the row's tooltip says so. Taking that setting out has the app ask again. Don't add a source, or ask more often,
   without the guard.
 - **Copy Text uses `Windows.Media.Ocr`,** through the Windows SDK's .NET projection (the app targets
   `net10.0-windows10.0.19041.0`). It reads only the languages whose text recognition is installed; without any, the app

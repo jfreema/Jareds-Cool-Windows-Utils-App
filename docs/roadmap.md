@@ -76,19 +76,23 @@ doesn't share one says so.
 
 - [x] A Temperature section in the menu: the processor, and one more reading, each in °F with the Mac's pill, from Cool
       to Critical
-- [x] What Windows shares without a driver or an administrator: the firmware's thermal zones, the graphics card's
-      temperature, as Task Manager shows it, and the drive's
-- [x] The motherboard when the PC shares it, or else the graphics card, another sensor inside, or the drive
-- [x] Levels of their own for the motherboard and the drive, which run cooler; Hot at least while Windows slows the PC
-      down to cool it
+- [x] What Windows shares without a driver or an administrator: the firmware's thermal zones, and the graphics card's
+      temperature, as Task Manager shows it (0.4.0 also asked the drive, which froze a PC: see 0.4.2)
+- [x] The motherboard when the PC shares it, or else the graphics card or another sensor inside
+- [x] Levels of their own for the motherboard, which runs cooler; Hot at least while Windows slows the PC down to cool
+      it
 - [x] The self-test reads them and checks the menu on GitHub's Windows machines, which have no sensors to read
 - [x] Released
 - [x] 0.4.1: Jared's PC froze with 0.4.0's menu open, which read the temperatures as the app started and every 2
       seconds, and stayed frozen until he turned it off. Now nothing is read until the menu opens, then once every 2
       minutes, as he asked. The graphics card and the drive aren't asked at all, and a reading that's slow, never
       comes, or was being waited for when the PC stopped isn't asked for again.
-- [ ] Find out from Jared's log whether it was the graphics card or the drive, and put the other one back, carefully
-- [ ] Tried on Jared's Windows PC
+- [x] 0.4.2: the freeze was very likely the drive's temperature question, answered by Intel's RST storage driver, so
+      the code that asked a drive is gone for good. Settings and the log are written through to the disk, so a PC that
+      stops leaves a record, and what the app leaves alone is remembered even if it stops twice. The self-test asks
+      real hardware only on GitHub's machines.
+- [ ] Tried on Jared's Windows PC: open the 0.4.1 or later menu once and see what the thermal zones say
+- [ ] Graphics cards back, only on a PC that isn't Jared's, and with his say-so
 
 ## 0.5.0: Stay awake with the lid closed
 

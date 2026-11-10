@@ -45,12 +45,14 @@ public class SafeToAskTests
     public void OnlyADriverNewEnoughToSayIsAsked(uint? driver, bool asked) =>
         Assert.Equal(asked ? null : "its driver is too old to say", SafeToAsk.WhyNotCard(0xB, driver));
 
+    /// <summary>Asking the drive Windows is on for its temperature froze Jared's PC, through Intel's RST driver
+    /// (November 10, 2026). There's no drive among the sources, so none can be asked, by the app or by the
+    /// self-test.</summary>
     [Fact]
-    public void OnlyAnNvmeDriveIsAsked()
+    public void NoDriveIsAskedEver()
     {
-        Assert.Null(SafeToAsk.WhyNotDrive(17));
-        // SATA, ATA, USB, RAID, SAS, a virtual disk, and one Windows knows nothing of
-        foreach (int bus in new[] { 11, 3, 7, 8, 10, 14, 15, 0 })
-            Assert.Equal($"it's not an NVMe drive (bus type {bus})", SafeToAsk.WhyNotDrive(bus));
+        Assert.Equal(["Zones", "Graphics"], Enum.GetNames<TemperatureSource>());
+        Assert.Equal([TemperatureSource.Zones], SafeToAsk.Sources);
+        Assert.Equal([TemperatureSource.Zones, TemperatureSource.Graphics], SafeToAsk.EverySource);
     }
 }

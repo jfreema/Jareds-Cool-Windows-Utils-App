@@ -48,15 +48,10 @@ public class HeatTests
         Assert.Equal(level, Heat.Level(HeatPart.Inside, fahrenheit));
     }
 
-    [Theory]
-    [InlineData(85, HeatLevel.Cool)]
-    [InlineData(86, HeatLevel.Normal)]
-    [InlineData(131, HeatLevel.Warm)]
-    [InlineData(158, HeatLevel.Hot)]
-    [InlineData(167, HeatLevel.Overheating)]
-    [InlineData(176, HeatLevel.Critical)]
-    public void DrivesLevels(int fahrenheit, HeatLevel level) =>
-        Assert.Equal(level, Heat.Level(HeatPart.Drive, fahrenheit));
+    /// <summary>No row is a drive's: no drive is asked (SafeToAsk)</summary>
+    [Fact]
+    public void NoPartIsADrive() =>
+        Assert.Equal(["Processor", "Graphics", "Motherboard", "Inside"], Enum.GetNames<HeatPart>());
 
     [Fact]
     public void TheScaleInWordsMatchesTheMacs() =>

@@ -58,6 +58,88 @@ public sealed class SettingsTests : IDisposable
         Assert.False(edited.GetBool("snipScreen"));
     }
 
+    /// <summary>What a save leaves when the PC stops after the new file is on the disk and before it has taken the
+    /// old one's place</summary>
+    [Fact]
+    public void ASaveThePcStoppedInTheMiddleOfIsFinishedTheNextTime()
+    {
+        var settings = new Settings(SettingsPath);
+        settings.Set("snapWindows", true);
+        File.WriteAllText(SettingsPath + ".new", "{ \"snapWindows\": true, \"temperatureLeftOut\": \"Zones:Stopped\" }");
+        var again = new Settings(SettingsPath);
+        Assert.Equal("Zones:Stopped", again.GetString("temperatureLeftOut"));
+        Assert.True(again.GetBool("snapWindows"));
+        // And it's in the settings file itself by now, where the troubleshooting guide has one look
+        Assert.False(File.Exists(SettingsPath + ".new"));
+        Assert.Contains("Zones:Stopped", File.ReadAllText(SettingsPath));
+    }
+
+    /// <summary>A file of the right size full of nothing is what Windows can leave of one whose contents hadn't
+    /// reached the disk when the power was cut: Jared's log.txt ended in 250 of them (November 10, 2026)</summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0")]
+    [InlineData("{ \"snapWindows\": fal")]
+    public void ASaveThatNeverReachedTheDiskIsPassedOver(string unfinished)
+    {
+        var settings = new Settings(SettingsPath);
+        settings.Set("snapWindows", true);
+        File.WriteAllText(SettingsPath + ".new", unfinished);
+        var again = new Settings(SettingsPath);
+        Assert.True(again.GetBool("snapWindows"));
+        again.Set("snipScreen", true);
+        Assert.False(File.Exists(SettingsPath + ".new"));
+        Assert.True(new Settings(SettingsPath).GetBool("snipScreen"));
+    }
+
+    /// <summary>The settings changed by hand since, as the troubleshooting guide has one do, are the ones to go
+    /// by</summary>
+    [Fact]
+    public void AnOlderUnfinishedSaveDoesntUndoWhatWasChangedSince()
+    {
+        File.WriteAllText(SettingsPath + ".new", "{ \"temperatureLeftOut\": \"Zones:Stopped\" }");
+        File.SetLastWriteTimeUtc(SettingsPath + ".new", DateTime.UtcNow.AddMinutes(-5));
+        File.WriteAllText(SettingsPath, "{ \"snapWindows\": true }");
+        var settings = new Settings(SettingsPath);
+        Assert.Null(settings.GetString("temperatureLeftOut"));
+        Assert.True(settings.GetBool("snapWindows"));
+    }
+
+    [Fact]
+    public void SavingSaysWhetherItWorked()
+    {
+        var settings = new Settings(SettingsPath);
+        Assert.True(settings.Set("temperatureLeftOut", "Zones:Stopped"));
+        // Something in the settings' place
+        File.Delete(SettingsPath);
+        Directory.CreateDirectory(SettingsPath);
+        Assert.False(settings.Set("temperatureLeftOut", "Zones:Stuck"));
+        Assert.Equal("Zones:Stuck", settings.GetString("temperatureLeftOut"));
+        // The same again isn't taken for saved
+        Assert.False(settings.Set("temperatureLeftOut", "Zones:Stuck"));
+        Directory.Delete(SettingsPath);
+        Assert.True(settings.Set("temperatureLeftOut", "Zones:Stuck"));
+        Assert.Equal("Zones:Stuck", new Settings(SettingsPath).GetString("temperatureLeftOut"));
+        Assert.True(new Settings().Set("temperatureLeftOut", "Zones:Stuck"));
+    }
+
+    /// <summary>A slider being dragged sets the same value over and over, and every save waits for the disk</summary>
+    [Fact]
+    public void SettingWhatsAlreadyThereWritesNothing()
+    {
+        var settings = new Settings(SettingsPath);
+        settings.Set("opacity", "80");
+        settings.Set("snapWindows", true);
+        var longAgo = DateTime.UtcNow.AddDays(-1);
+        File.SetLastWriteTimeUtc(SettingsPath, longAgo);
+        settings.Set("opacity", "80");
+        settings.Set("snapWindows", true);
+        Assert.Equal(longAgo, File.GetLastWriteTimeUtc(SettingsPath), TimeSpan.FromSeconds(2));
+        settings.Set("opacity", "75");
+        Assert.True(File.GetLastWriteTimeUtc(SettingsPath) > longAgo.AddHours(1));
+        Assert.Equal("75", new Settings(SettingsPath).GetString("opacity"));
+    }
+
     [Fact]
     public void ABrokenFileStartsOver()
     {

@@ -1,11 +1,10 @@
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 namespace JaredsWindowsUtils.Interop;
 
 /// <summary>The calls that read the temperatures Windows shares without a driver or an administrator: performance
-/// counters for the firmware's thermal zones, the graphics kernel for the cards' sensors, and the storage stack for the
-/// drive's</summary>
+/// counters for the firmware's thermal zones, and the graphics kernel for the cards' sensors. Nothing here asks a
+/// drive, on purpose: see SafeToAsk.</summary>
 static partial class Native
 {
     // Performance counters
@@ -97,50 +96,6 @@ static partial class Native
 
     [DllImport("gdi32.dll")]
     public static extern int D3DKMTCloseAdapter(ref D3DKMT_CLOSEADAPTER close);
-
-    // Drives
-
-    public const uint FILE_SHARE_READ = 0x1;
-    public const uint FILE_SHARE_WRITE = 0x2;
-    public const uint OPEN_EXISTING = 3;
-    public const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
-    public const uint IOCTL_STORAGE_GET_DEVICE_NUMBER = 0x002D1080;
-    /// <summary>STORAGE_DEVICE_DESCRIPTOR: where the vendor's and product's names start at bytes 12 and 16, and the
-    /// bus type (STORAGE_BUS_TYPE) at byte 28</summary>
-    public const int StorageDeviceProperty = 0;
-    /// <summary>STORAGE_TEMPERATURE_DATA_DESCRIPTOR: the warning and critical temperatures at bytes 8 and 10, then
-    /// 16-byte readings from byte 24, each with its temperature at byte 2, all in °C</summary>
-    public const int StorageDeviceTemperatureProperty = 52;
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct STORAGE_PROPERTY_QUERY
-    {
-        public int PropertyId;
-        /// <summary>0, PropertyStandardQuery</summary>
-        public int QueryType;
-        public byte AdditionalParameters;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct STORAGE_DEVICE_NUMBER
-    {
-        public uint DeviceType;
-        public uint DeviceNumber;
-        public uint PartitionNumber;
-    }
-
-    /// <param name="access">0 to ask the device about itself, which needs no administrator</param>
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CreateFileW")]
-    public static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security,
-        uint creation, uint flags, IntPtr template);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool DeviceIoControl(SafeFileHandle device, uint code, ref STORAGE_PROPERTY_QUERY input,
-        int inputSize, IntPtr output, int outputSize, out int returned, IntPtr overlapped);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, int inputSize,
-        out STORAGE_DEVICE_NUMBER output, int outputSize, out int returned, IntPtr overlapped);
 
     /// <summary>Time since Windows started, in 100-nanosecond steps, leaving out the time it slept</summary>
     [DllImport("kernel32.dll")]

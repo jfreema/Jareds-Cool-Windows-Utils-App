@@ -77,11 +77,12 @@ open the folder. The log says what the app did and why something didn't work.
   `[temp]`.
 - **The second reading isn't the motherboard.** The app shows the motherboard when your PC shares it, or else
   another sensor inside the PC.
-- **It showed the graphics card or the drive before.** Version 0.4.0 did. A PC froze while it was asking them how hot
-  they are, so the app leaves both alone until it's known which of the two it was.
-- **A temperature never changes,** like 82°F. Some PCs' firmware gives a fixed number instead of a sensor's. The app
-  doesn't take a sensor that's below 86°F for the processor unless it's named for it, but shows it as **Inside Your
-  PC** when there's nothing else.
+- **It showed the graphics card or the drive before.** Version 0.4.0 did. A PC froze as the app started and asked the
+  drive how hot it is, through Intel's RST storage driver. The app never asks a drive now, and leaves the graphics card
+  alone too.
+- **A temperature never changes,** like 82°F. Some PCs' firmware gives a fixed number instead of a sensor's; Dell
+  OptiPlex desktops give 82°F. The app doesn't take a sensor that's below 86°F for the processor unless it's named for
+  it, but shows it as **Inside Your PC** when there's nothing else.
 - **The pill is hotter than the number beside it.** Windows is slowing your PC down to cool it off, and resting the
   pointer on it says so. Give it air, and quit what's working it hard.
 - **Another app shows a different temperature.** Apps read different sensors. Apps like HWiNFO read the processor's own
@@ -95,11 +96,11 @@ open the folder. The log says what the app did and why something didn't work.
   `[temp]`. To have the app ask again, quit the app, open
   `%LocalAppData%\JaredsWindowsUtils\settings.json` in Notepad, delete the line that starts with
   `"temperatureLeftOut"`, save it, and open the app again.
-- **The PC freezes with the menu open.** Version 0.4.0 asked the graphics card and the drive how hot they are every 2
-  seconds, and a PC froze. Later versions ask neither, and read what Windows already has once every 2 minutes. To get
-  one without opening 0.4.0's menu, download the installer from the [README](../README.md#install) and run it. If it
-  still happens, the app won't read the same thing twice: the next time it starts, it leaves out what it was reading,
-  and the log says what that was.
+- **The PC freezes as the app starts, or with the menu open.** Version 0.4.0 asked the drive Windows is on how hot it
+  is, as it started, and a PC with an Intel RST driver froze and stayed frozen until it was turned off. Later versions
+  never ask a drive. Don't open 0.4.0's menu: download the installer from the [README](../README.md#install) and run
+  it with the old copy closed. If a PC still freezes, the app won't ask the same thing twice: the next time it starts,
+  it leaves out what it was reading, and the log, written through to the disk, says what that was.
 
 ## Updates
 

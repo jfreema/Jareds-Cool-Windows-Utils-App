@@ -11,8 +11,6 @@ public enum TemperatureSource
     Zones,
     /// <summary>The graphics cards' own sensors</summary>
     Graphics,
-    /// <summary>The drive Windows is on</summary>
-    Drive,
 }
 
 /// <summary>Why the app stopped asking a source</summary>
@@ -37,8 +35,7 @@ public sealed record LeftOut(TemperatureSource Source, LeftOutBecause Because)
             string asks = Source switch
             {
                 TemperatureSource.Zones => "your PC's sensors for their temperatures",
-                TemperatureSource.Graphics => "the graphics card for its temperature",
-                _ => "the drive for its temperature",
+                _ => "the graphics card for its temperature",
             };
             string why = Because switch
             {
@@ -51,8 +48,9 @@ public sealed record LeftOut(TemperatureSource Source, LeftOutBecause Because)
     }
 }
 
-/// <summary>Keeps a source that makes trouble from being asked again. Version 0.4.0 asked the graphics cards and the
-/// drive every 2 seconds, and Jared's PC seemed to lock up with its menu open (November 10, 2026), so now:
+/// <summary>Keeps a source that makes trouble from being asked again. Version 0.4.0's first question, as it started,
+/// froze Jared's PC until he turned it off (November 10, 2026, <see cref="SafeToAsk"/>), and nothing was left to say
+/// which source it had been asking. So now:
 /// <list type="bullet">
 /// <item>While a source is being asked, a file says so. If the app finds the file saying so as it starts, the app or
 /// the PC stopped mid-question, and that source isn't asked again.</item>
@@ -61,7 +59,8 @@ public sealed record LeftOut(TemperatureSource Source, LeftOutBecause Because)
 /// is told to quit.</item>
 /// </list>
 /// What isn't asked again is kept in the settings, under temperatureLeftOut: taking it out of there has the app ask
-/// again.</summary>
+/// again. The file goes on naming a source until the settings have it, so that a PC which stops again between the
+/// two still finds one of them.</summary>
 public sealed class SourceGuard
 {
     /// <summary>An answer this slow gets its source asked less often</summary>
@@ -88,13 +87,21 @@ public sealed class SourceGuard
     readonly SortedDictionary<TemperatureSource, LeftOutBecause> leftOut = [];
     readonly Dictionary<TemperatureSource, TimeSpan> notBefore = [];
     readonly HashSet<TemperatureSource> saidSlow = [];
-    (TemperatureSource Source, TimeSpan Since)? asking;
+    (TemperatureSource Source, TimeSpan Since, bool Ready)? asking;
     /// <summary>The file, kept open from the first question on, so that each one costs a small write and no more</summary>
     FileStream? marker;
     /// <summary>The source the file names</summary>
     TemperatureSource? marked;
     /// <summary>The file names a source that isn't being asked, since it couldn't be changed: tried again</summary>
     bool leftover;
+    /// <summary>What's left out isn't in the settings file, which couldn't be written: tried again</summary>
+    bool unsaved;
+    /// <summary>The file is there but couldn't be read as the app started</summary>
+    bool unread;
+    /// <summary>The file is left naming a source that isn't asked any more, since the settings don't say so yet. It
+    /// says so in their place, the next time the app starts.</summary>
+    bool held;
+    readonly HashSet<TemperatureSource> askedBefore = [];
     volatile bool closed;
 
     /// <param name="markerPath">The file that says which source is being asked, or null to go without, as in
@@ -110,15 +117,30 @@ public sealed class SourceGuard
         this.log = log ?? (_ => { });
         foreach (var entry in Parse(settings.GetString(LeftOutKey))) leftOut[entry.Source] = entry.Because;
         foreach (var entry in LeftOut) this.log($"Not asking {Name(entry.Source)}: {Before(entry.Because)}. {Undo}");
-        if (ReadMarker() is { } source) LeaveOut(source, LeftOutBecause.Stopped, null);
+        ReadLeftBehind();
+    }
+
+    /// <summary>What a file left behind names is held against its source. A file that's there but can't be read, as
+    /// when another program has it open, may name one too, so nothing is asked until it can be read, and it is left
+    /// as it is meanwhile.</summary>
+    void ReadLeftBehind()
+    {
+        if (ReadMarker(out unread) is not { } source)
+        {
+            if (unread) log($"Couldn't read {markerPath}: nothing is asked until it can be");
+            return;
+        }
+        marked = source;
+        // In the settings already if the PC stopped once more, after they were written and before the file was
+        if (!leftOut.ContainsKey(source)) LeaveOut(source, LeftOutBecause.Stopped, null);
+        Release();
     }
 
     /// <summary>For the log</summary>
     public static string Name(TemperatureSource source) => source switch
     {
         TemperatureSource.Zones => "the thermal zones",
-        TemperatureSource.Graphics => "the graphics cards",
-        _ => "the drive",
+        _ => "the graphics cards",
     };
 
     /// <summary>What happened in an earlier run</summary>
@@ -146,15 +168,46 @@ public sealed class SourceGuard
 
     /// <summary>True if the source may be asked now, and then End must follow. False while it's left out, or was
     /// asked too recently, when what it said last time still stands.</summary>
-    public bool Begin(TemperatureSource source)
+    /// <param name="preparing">The asker gets ready first, which can take seconds and isn't the source's doing, and
+    /// calls <see cref="Ready"/> when the question itself goes out</param>
+    public bool Begin(TemperatureSource source, bool preparing = false)
     {
         lock (gate)
         {
+            if (unread)
+            {
+                ReadLeftBehind();
+                if (unread) return false;
+            }
+            if (unsaved) Save();
+            if (held) Release();
             if (leftover) Unmark();
             if (closed || leftOut.ContainsKey(source)) return false;
+            // The file still has to say what the settings can't yet, and asking another source would take it
+            if (held) return false;
             if (notBefore.TryGetValue(source, out var time) && clock() < time) return false;
+            if (askedBefore.Add(source)) log($"Asking {Name(source)} for the first time since the app started");
             Mark(source);
-            asking = (source, clock());
+            // Told to quit while the file was being written, when quitting doesn't wait for it: left as it is, the
+            // file would be held against the source the next time the app starts
+            if (closed)
+            {
+                Unmark();
+                return false;
+            }
+            asking = (source, clock(), !preparing);
+            return true;
+        }
+    }
+
+    /// <summary>Getting ready is over and the question itself goes out now. False if the source was given up on
+    /// meanwhile, or the app told to quit: then it isn't asked.</summary>
+    public bool Ready(TemperatureSource source)
+    {
+        lock (gate)
+        {
+            if (closed || leftOut.ContainsKey(source)) return false;
+            if (asking is { } current && current.Source == source) asking = (source, clock(), true);
             return true;
         }
     }
@@ -165,14 +218,16 @@ public sealed class SourceGuard
         lock (gate)
         {
             if (asking?.Source == source) asking = null;
-            if (marked == source) Unmark();
-            // Given up on while it was being asked
-            if (leftOut.ContainsKey(source)) return;
-            if (took >= TooSlow)
+            // Given up on while it was being asked: the file is seen to there
+            if (leftOut.ContainsKey(source))
             {
-                LeaveOut(source, LeftOutBecause.TooSlow, took);
+                if (held) Release();
                 return;
             }
+            // Into the settings before the file says nothing
+            if (took >= TooSlow) LeaveOut(source, LeftOutBecause.TooSlow, took);
+            if (marked == source) Unmark();
+            if (took >= TooSlow) return;
             if (took >= Slow)
             {
                 notBefore[source] = clock() + SlowEvery;
@@ -215,8 +270,18 @@ public sealed class SourceGuard
         {
             if (asking is { } current)
             {
-                if (clock() - current.Since >= StuckAtQuit) GiveUp(current);
+                // Time spent getting ready isn't held against the source
+                if (current.Ready && clock() - current.Since >= StuckAtQuit) GiveUp(current);
                 asking = null;
+            }
+            if (unsaved) Save();
+            if (held) Release();
+            if (held || unread)
+            {
+                // It stays, to say the next time the app starts what the settings still can't, or what it hasn't
+                // been possible to read
+                CloseMarker();
+                return;
             }
             if (marked != null || leftover) Unmark();
             RemoveMarker();
@@ -227,19 +292,34 @@ public sealed class SourceGuard
         }
     }
 
-    void GiveUp((TemperatureSource Source, TimeSpan Since) question)
+    void GiveUp((TemperatureSource Source, TimeSpan Since, bool Ready) question)
     {
         asking = null;
-        if (marked == question.Source) Unmark();
         if (!leftOut.ContainsKey(question.Source))
             LeaveOut(question.Source, LeftOutBecause.Stuck, clock() - question.Since);
+        if (marked == question.Source) Release();
+    }
+
+    /// <summary>The file says nothing again, but only once the settings say what's left out. Until then it's the
+    /// only record of it there is.</summary>
+    void Release()
+    {
+        held = unsaved && markerPath != null;
+        if (!held) Unmark();
+    }
+
+    void Save()
+    {
+        bool before = unsaved;
+        unsaved = !settings.Set(LeftOutKey, string.Join(",", leftOut.Select(entry => $"{entry.Key}:{entry.Value}")));
+        if (unsaved && !before) log($"Couldn't save the settings, so {LeftOutKey} isn't in them yet");
     }
 
     void LeaveOut(TemperatureSource source, LeftOutBecause because, TimeSpan? took)
     {
         leftOut[source] = because;
         notBefore.Remove(source);
-        settings.Set(LeftOutKey, string.Join(",", leftOut.Select(entry => $"{entry.Key}:{entry.Value}")));
+        Save();
         string how = because switch
         {
             LeftOutBecause.Stopped => "the app or the PC stopped while asking, the last time the app ran",
@@ -254,7 +334,8 @@ public sealed class SourceGuard
 
     static string Seconds(TimeSpan time) => time.TotalSeconds.ToString("0", CultureInfo.InvariantCulture) + " seconds";
 
-    /// <summary>"Graphics:Stopped,Drive:TooSlow", leaving out what it can't read</summary>
+    /// <summary>"Zones:Stopped,Graphics:TooSlow", leaving out what it can't read, like the drive that 0.4.1 could
+    /// have put there</summary>
     public static IReadOnlyList<LeftOut> Parse(string? text)
     {
         var entries = new List<LeftOut>();
@@ -357,32 +438,27 @@ public sealed class SourceGuard
         }
     }
 
-    /// <summary>The source a file left behind names. The file is made to say nothing rather than taken away: a copy
-    /// of the app that's stuck may still have it open, and Windows wouldn't let a file by that name be made again
-    /// until that copy is gone.</summary>
-    TemperatureSource? ReadMarker()
+    /// <summary>The source a file left behind names. Whoever asks makes it say nothing again, once the settings have
+    /// what it said, rather than take it away: a copy of the app that's stuck may still have it open, and Windows
+    /// wouldn't let a file by that name be made again until that copy is gone.</summary>
+    TemperatureSource? ReadMarker(out bool busy)
     {
+        busy = false;
         if (markerPath == null || !File.Exists(markerPath)) return null;
-        TemperatureSource? named = null;
         try
         {
-            using var stream = new FileStream(markerPath, FileMode.Open, FileAccess.ReadWrite,
-                FileShare.ReadWrite | FileShare.Delete, 1, FileOptions.WriteThrough);
+            using var stream = new FileStream(markerPath, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
             var bytes = new byte[MarkLength];
             int count = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
-            if (!TryName(Encoding.ASCII.GetString(bytes, 0, count).Trim(), out TemperatureSource source)) return null;
-            named = source;
-            leftover = true;
-            Array.Fill(bytes, (byte)' ');
-            stream.Position = 0;
-            stream.Write(bytes);
-            stream.Flush(flushToDisk: true);
-            leftover = false;
+            return TryName(Encoding.ASCII.GetString(bytes, 0, count).Trim(), out TemperatureSource source)
+                ? source
+                : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // What it said, if it got that far, still counts
+            busy = true;
+            return null;
         }
-        return named;
     }
 }

@@ -13,7 +13,6 @@ public enum HeatPart
     Motherboard,
     /// <summary>A sensor the PC doesn't say the place of</summary>
     Inside,
-    Drive,
 }
 
 public static class Heat
@@ -24,15 +23,11 @@ public static class Heat
     /// <summary>A motherboard runs cooler, and gets hurt sooner: normal from 30°C, hot from 60°C, critical above
     /// 80°C</summary>
     static readonly int[] BoardStarts = [86, 122, 140, 158, 177];
-    /// <summary>A drive slows itself down from about 70°C: normal from 30°C, warm from 55°C, critical from
-    /// 80°C</summary>
-    static readonly int[] DriveStarts = [86, 131, 158, 167, 176];
 
     /// <summary>Where each level from Normal up starts, in °F</summary>
     public static IReadOnlyList<int> Starts(HeatPart part) => part switch
     {
         HeatPart.Processor or HeatPart.Graphics => ProcessorStarts,
-        HeatPart.Drive => DriveStarts,
         _ => BoardStarts,
     };
 
@@ -76,8 +71,7 @@ public sealed record TemperatureRow(HeatPart Part, double? Celsius, string? Desc
         HeatPart.Processor => "Processor",
         HeatPart.Graphics => "Graphics Card",
         HeatPart.Motherboard => "Motherboard",
-        HeatPart.Inside => "Inside Your PC",
-        _ => "Drive",
+        _ => "Inside Your PC",
     };
 
     public int? Fahrenheit => Celsius is { } celsius ? Heat.Fahrenheit(celsius) : null;
@@ -110,7 +104,6 @@ public sealed record TemperatureRow(HeatPart Part, double? Celsius, string? Desc
     {
         HeatPart.Processor => "processor",
         HeatPart.Graphics => "graphics card",
-        HeatPart.Drive => "drive",
         _ => "motherboard",
     };
 

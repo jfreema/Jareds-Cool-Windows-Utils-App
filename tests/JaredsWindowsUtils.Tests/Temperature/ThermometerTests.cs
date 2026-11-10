@@ -10,7 +10,6 @@ public class ThermometerTests
     {
         public IReadOnlyList<ThermalZone> ZoneReadings { get; set; } = [new(@"\_TZ.CPUZ", 50)];
         public IReadOnlyList<GraphicsTemperature> CardReadings { get; set; } = [];
-        public DriveTemperature? DriveReading { get; set; }
         public Dictionary<TemperatureSource, TimeSpan> Opens { get; } = [];
         public Dictionary<TemperatureSource, TimeSpan> Takes { get; } = [];
         public Dictionary<TemperatureSource, Exception> Fails { get; } = [];
@@ -38,14 +37,11 @@ public class ThermometerTests
 
         public IReadOnlyList<GraphicsTemperature> Graphics() => Answer(TemperatureSource.Graphics, CardReadings);
 
-        public DriveTemperature? Drive() => Answer(TemperatureSource.Drive, DriveReading);
-
         public string? Note(TemperatureSource source) => Notes.GetValueOrDefault(source);
     }
 
     const TemperatureSource Zones = TemperatureSource.Zones;
     const TemperatureSource Graphics = TemperatureSource.Graphics;
-    const TemperatureSource Drive = TemperatureSource.Drive;
 
     readonly TestClock clock = new();
     readonly Settings settings = new();
@@ -60,27 +56,26 @@ public class ThermometerTests
     /// <summary>Made when first wanted, so a test can put what's left out into the settings first</summary>
     SourceGuard Guard => guard ??= new SourceGuard(settings, null, clock.Now);
 
-    /// <summary>One that asks every source, as the app will again once it's known which of them froze Jared's PC</summary>
+    /// <summary>One that asks the graphics cards too, as the self-test does on GitHub's machines</summary>
     Thermometer Thermometer() => new(Guard, clock.Now, sensors, asks: SafeToAsk.EverySource);
 
-    /// <summary>Jared's PC froze with 0.4.0's menu open and stayed frozen (November 10, 2026). 0.4.0 asked the graphics
-    /// cards and the drive too.</summary>
+    /// <summary>Jared's PC froze as 0.4.0 started and stayed frozen (November 10, 2026). 0.4.0 asked the graphics
+    /// cards and the drive Windows is on too. The drive is gone for good, and the cards wait for a PC to try them
+    /// on.</summary>
     [Fact]
-    public void ForNowTheAppAsksOnlyTheThermalZones()
+    public void TheAppAsksOnlyTheThermalZones()
     {
         Assert.Equal([Zones], SafeToAsk.Sources);
         sensors.CardReadings = [new("Card", 55)];
-        sensors.DriveReading = new DriveTemperature("SSD", 40);
         var thermometer = new Thermometer(Guard, clock.Now, sensors);
         var reading = thermometer.Read();
         Assert.Equal([Zones], sensors.Asked);
         Assert.Equal([Zones], sensors.Prepared);
         Assert.Empty(reading.Graphics);
-        Assert.Null(reading.Drive);
         Assert.Equal(50, reading.Report.Processor.Celsius);
         Assert.Equal(new TemperatureRow(HeatPart.Motherboard, null), reading.Report.Other);
-        Assert.Equal(@"thermal zones: \_TZ.CPUZ 50.0°C (answered in 0 ms); graphics: not asked in this version; "
-            + "drive: not asked in this version", reading.Sources);
+        Assert.Equal(@"thermal zones: \_TZ.CPUZ 50.0°C (answered in 0 ms); graphics: not asked in this version",
+            reading.Sources);
         Assert.Empty(Guard.LeftOut);
 
         clock.Pass(Core.Temperature.Thermometer.Every);
@@ -99,19 +94,19 @@ public class ThermometerTests
         Assert.Empty(sensors.Asked);
 
         var first = thermometer.Read();
-        Assert.Equal([Zones, Graphics, Drive], sensors.Asked);
+        Assert.Equal([Zones, Graphics], sensors.Asked);
         Assert.False(thermometer.IsDue);
         Assert.Same(first, thermometer.Read());
         clock.Pass(TimeSpan.FromSeconds(119));
         Assert.False(thermometer.IsDue);
         Assert.Same(first, thermometer.Read());
-        Assert.Equal(3, sensors.Asked.Count);
+        Assert.Equal(2, sensors.Asked.Count);
 
         clock.PassSeconds(1);
         Assert.True(thermometer.IsDue);
         var second = thermometer.Read();
         Assert.NotSame(first, second);
-        Assert.Equal([Zones, Graphics, Drive, Zones, Graphics, Drive], sensors.Asked);
+        Assert.Equal([Zones, Graphics, Zones, Graphics], sensors.Asked);
         Assert.False(thermometer.IsDue);
     }
 
@@ -128,38 +123,6 @@ public class ThermometerTests
     }
 
     [Fact]
-    public void TheDriveIsAskedOnlyWhenNothingElseGivesTheSecondReading()
-    {
-        sensors.DriveReading = new DriveTemperature("Samsung SSD 980 PRO 1TB", 38);
-        var thermometer = Thermometer();
-        var reading = thermometer.Read();
-        Assert.Equal([Zones, Graphics, Drive], sensors.Asked);
-        Assert.Equal(new TemperatureRow(HeatPart.Drive, 38, "The drive Windows is on, Samsung SSD 980 PRO 1TB"),
-            reading.Report.Other);
-        Assert.Equal(sensors.DriveReading, reading.Drive);
-
-        // A graphics card turns up with a temperature, and the drive is left alone from then on
-        sensors.CardReadings = [new("Card", 55)];
-        clock.Pass(Core.Temperature.Thermometer.Every);
-        reading = thermometer.Read();
-        Assert.Equal([Zones, Graphics, Drive, Zones, Graphics], sensors.Asked);
-        Assert.Equal(HeatPart.Graphics, reading.Report.Other.Part);
-        Assert.Null(reading.Drive);
-        Assert.EndsWith("; drive: not needed", reading.Sources);
-    }
-
-    [Fact]
-    public void TheDriveIsntAskedWhenTheMotherboardSaysItsTemperature()
-    {
-        sensors.ZoneReadings = [new(@"\_TZ.CPUZ", 52), new(@"\_TZ.PCHZ", 45)];
-        sensors.DriveReading = new DriveTemperature("SSD", 38);
-        var reading = Thermometer().Read();
-        Assert.Equal([Zones, Graphics], sensors.Asked);
-        Assert.Equal([Zones, Graphics], sensors.Prepared);
-        Assert.Null(reading.Drive);
-    }
-
-    [Fact]
     public void ASourceLeftOutIsntAskedAndItsRowSaysWhy()
     {
         settings.Set(SourceGuard.LeftOutKey, "Zones:Stuck");
@@ -172,8 +135,8 @@ public class ThermometerTests
             reading.Report.Processor.Explanation);
         Assert.Equal(HeatPart.Graphics, reading.Report.Other.Part);
         Assert.Null(reading.Report.Other.Unread);
-        Assert.Equal("thermal zones: not asked any more (Stuck); graphics: Card 55.0°C (answered in 0 ms); "
-            + "drive: not needed", reading.Sources);
+        Assert.Equal("thermal zones: not asked any more (Stuck); graphics: Card 55.0°C (answered in 0 ms)",
+            reading.Sources);
     }
 
     [Fact]
@@ -203,20 +166,20 @@ public class ThermometerTests
     [Fact]
     public void ASourceThatTakesTooLongIsLeftOutOfThatVeryReading()
     {
-        sensors.DriveReading = new DriveTemperature("SSD", 40);
-        sensors.Takes[Drive] = TimeSpan.FromMilliseconds(1500);
+        sensors.CardReadings = [new("Card", 55)];
+        sensors.Takes[Graphics] = TimeSpan.FromMilliseconds(1500);
         var thermometer = Thermometer();
         var reading = thermometer.Read();
-        Assert.Null(reading.Drive);
+        Assert.Empty(reading.Graphics);
         Assert.Null(reading.Report.Other.Celsius);
-        Assert.Equal("The app no longer asks the drive for its temperature, since the answer took too long.",
+        Assert.Equal("The app no longer asks the graphics card for its temperature, since the answer took too long.",
             reading.Report.Other.Explanation);
-        Assert.EndsWith("; drive: not asked any more (TooSlow)", reading.Sources);
-        Assert.Equal("Drive:TooSlow", settings.GetString(SourceGuard.LeftOutKey));
+        Assert.EndsWith("; graphics: not asked any more (TooSlow)", reading.Sources);
+        Assert.Equal("Graphics:TooSlow", settings.GetString(SourceGuard.LeftOutKey));
 
         clock.Pass(TimeSpan.FromHours(1));
         thermometer.Read();
-        Assert.Equal([Zones, Graphics, Drive, Zones, Graphics], sensors.Asked);
+        Assert.Equal([Zones, Graphics, Zones], sensors.Asked);
     }
 
     [Fact]
@@ -276,7 +239,7 @@ public class ThermometerTests
         // The one that takes over asks the rest
         sensors.Asking = null;
         var next = Thermometer().Read();
-        Assert.Equal([Zones, Graphics, Drive], sensors.Asked);
+        Assert.Equal([Zones, Graphics], sensors.Asked);
         Assert.Equal("The app no longer asks your PC's sensors for their temperatures, since it got no answer.",
             next.Report.Processor.Explanation);
     }
@@ -290,17 +253,15 @@ public class ThermometerTests
         sensors.Notes[Graphics] = "Intel(R) UHD Graphics has no temperature (kind 0x2B, WDDM 2700)";
         Assert.Equal(@"thermal zones: \_TZ.CPUZ 52.5°C at 100% speed, \_TZ.TZ01 30.0°C (answered in 0 ms); "
             + "graphics: NVIDIA GeForce RTX 3070 45.0°C, slows at 83.0°C (answered in 12 ms, Intel(R) UHD Graphics "
-            + "has no temperature (kind 0x2B, WDDM 2700)); drive: not needed", Thermometer().Read().Sources);
+            + "has no temperature (kind 0x2B, WDDM 2700))", Thermometer().Read().Sources);
     }
 
     [Fact]
-    public void TheLogSaysWhatTheDriveSaid()
+    public void TheLogSaysWhyASourceHadNothing()
     {
         sensors.ZoneReadings = [];
-        sensors.DriveReading = new DriveTemperature("WD Black SN850X", 41, 84, 88);
         sensors.Notes[Zones] = "none to read, 0x800007D5";
         Assert.Equal("thermal zones: none (answered in 0 ms, none to read, 0x800007D5); graphics: none with a "
-            + "temperature (answered in 0 ms); drive: WD Black SN850X 41.0°C, warning at 84.0°C, critical at 88.0°C "
-            + "(answered in 0 ms)", Thermometer().Read().Sources);
+            + "temperature (answered in 0 ms)", Thermometer().Read().Sources);
     }
 }

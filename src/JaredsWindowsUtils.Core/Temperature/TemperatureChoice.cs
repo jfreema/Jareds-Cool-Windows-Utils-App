@@ -11,19 +11,15 @@ public sealed record ThermalZone(string Name, double Celsius, double? PassiveLim
 /// <param name="SlowsAt">Where the card starts slowing itself down to cool off, in °C, if it says</param>
 public sealed record GraphicsTemperature(string Name, double Celsius, double? SlowsAt = null);
 
-/// <summary>The drive Windows is on, which says its own temperature</summary>
-/// <param name="Warning">Where the drive says it's too hot, in °C, if it says</param>
-/// <param name="Critical">Where it says it's about to be damaged</param>
-public sealed record DriveTemperature(string Name, double Celsius, double? Warning = null, double? Critical = null);
-
 /// <summary>What a thermal zone is of, by its name. Firmware names them freely, four letters at most, so these are the
 /// names PC makers' firmware uses: CPUZ, GFXZ, PCHZ, EXTZ, LOCZ and BATZ, or TCPU, TSKN and TAMB, or just TZ00 and
 /// THM0, which don't say.</summary>
 public enum ZoneKind { Processor, Graphics, Board, Battery, Unknown }
 
 /// <summary>Which temperatures the menu shows: the processor's, and one more inside the PC, preferring the motherboard,
-/// as Jared asked on November 9, 2026. Without a driver, Windows has only what the firmware's thermal zones, the
-/// graphics cards and the drives tell it, so this makes the best of those.</summary>
+/// as Jared asked on November 9, 2026. Without a driver, Windows has only what the firmware's thermal zones and the
+/// graphics cards tell it, so this makes the best of those. A drive says its temperature too, but no drive is
+/// asked: that question froze Jared's PC (<see cref="SafeToAsk"/>).</summary>
 public static class TemperatureChoice
 {
     /// <summary>Below this a sensor is off, and above it broken, as on the Mac</summary>
@@ -60,11 +56,11 @@ public static class TemperatureChoice
 
     /// <param name="leftOut">The sources the app no longer asks, which a reading that's missing says</param>
     public static TemperatureReport Choose(IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics,
-        DriveTemperature? drive, IReadOnlyList<LeftOut>? leftOut = null)
+        IReadOnlyList<LeftOut>? leftOut = null)
     {
         var (processor, preferred, hottest) = Pick(zones, graphics);
-        // Last, a zone cooler than a processor: likely the air inside, or a number that never changes
-        var other = preferred ?? FromDrive(drive)
+        // Last, a zone cooler than a processor: likely the air inside
+        var other = preferred
             ?? (hottest(_ => true) is { } any
                 ? new TemperatureRow(HeatPart.Inside, any.Celsius, $"A sensor inside your PC, {ShortName(any.Name)}")
                 : new TemperatureRow(HeatPart.Motherboard, null));
@@ -79,12 +75,7 @@ public static class TemperatureChoice
         return new TemperatureReport(processor, other);
     }
 
-    /// <summary>Whether the drive's temperature would be shown, so it's only asked when it would be: when neither the
-    /// thermal zones nor the graphics cards give the second reading</summary>
-    public static bool WantsDrive(IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics) =>
-        Pick(zones, graphics).Preferred == null;
-
-    /// <summary>The processor's row, the second row if it's better than the drive, and the way to the zones not yet
+    /// <summary>The processor's row, the second row if there's a good one, and the way to the zones not yet
     /// shown</summary>
     static (TemperatureRow Processor, TemperatureRow? Preferred, Func<Func<ThermalZone, bool>, ThermalZone?> Hottest) Pick(
         IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics)
@@ -116,7 +107,7 @@ public static class TemperatureChoice
         return (processor, Preferred(Hottest, graphics), Hottest);
     }
 
-    /// <summary>The motherboard, else the graphics card, else another sensor inside. Failing those, the drive.</summary>
+    /// <summary>The motherboard, else the graphics card, else another sensor inside</summary>
     static TemperatureRow? Preferred(Func<Func<ThermalZone, bool>, ThermalZone?> hottest,
         IReadOnlyList<GraphicsTemperature> graphics)
     {
@@ -141,23 +132,5 @@ public static class TemperatureChoice
                 $"A sensor inside your PC, {ShortName(inside.Name)}");
 
         return null;
-    }
-
-    static TemperatureRow? FromDrive(DriveTemperature? drive)
-    {
-        if (drive == null || !IsPlausible(drive.Celsius)) return null;
-        HeatLevel? floor = null;
-        string? note = null;
-        if (drive.Critical is { } critical && IsPlausible(critical) && drive.Celsius >= critical)
-        {
-            floor = HeatLevel.Critical;
-            note = "The drive says it's hot enough to be damaged.";
-        }
-        else if (drive.Warning is { } warning && IsPlausible(warning) && drive.Celsius >= warning)
-        {
-            floor = HeatLevel.Overheating;
-            note = "The drive says it's too hot.";
-        }
-        return new TemperatureRow(HeatPart.Drive, drive.Celsius, $"The drive Windows is on, {drive.Name}", floor, note);
     }
 }
