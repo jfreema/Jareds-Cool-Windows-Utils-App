@@ -22,7 +22,12 @@ public sealed class Settings
         if (path == null || !File.Exists(path)) return null;
         try
         {
-            return JsonNode.Parse(File.ReadAllText(path)) as JsonObject;
+            // Forgiving of a comma left at the end, as when the last line is deleted by hand
+            return JsonNode.Parse(File.ReadAllText(path), null, new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+            }) as JsonObject;
         }
         catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException)
         {

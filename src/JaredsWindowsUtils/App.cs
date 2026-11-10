@@ -26,8 +26,14 @@ sealed class App : Application
     WindowSnapper snapper = null!;
     ScreenSnipper snipper = null!;
     Updater updater = null!;
+    /// <summary>Stops the app asking a temperature source that makes trouble</summary>
+    SourceGuard temperatureGuard = null!;
+    /// <summary>A new one for each run of questions that never ends: see ReadTemperatures</summary>
+    Func<Thermometer> makeThermometer = null!;
     Thermometer thermometer = null!;
-    /// <summary>Read again every 2 seconds while the menu's open, as on the Mac</summary>
+    /// <summary>Looks every 2 seconds, while the menu's open, whether the temperatures are due to be read again, which
+    /// they are every 2 minutes (Thermometer.Every), and whether a question has gone unanswered. Looking asks
+    /// nothing, and nothing is read while the menu's closed.</summary>
     readonly DispatcherTimer temperatureTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     TemperatureReading? temperatures;
     /// <summary>Where the menu's temperatures came from last, so the log says when that changes</summary>
@@ -75,9 +81,13 @@ sealed class App : Application
         snipper.Start();
         updater = new Updater(settings, Quit, ReadyToQuit);
         updater.BusyChanged += RefreshMenu;
-        thermometer = new Thermometer();
+        // Nothing is asked for a temperature until the menu opens
+        var guard = new SourceGuard(settings, TemperatureMarkerPath, WindowsSensors.Clock,
+            message => Log.Info("temp", message));
+        temperatureGuard = guard;
+        makeThermometer = () => new Thermometer(guard, WindowsSensors.Clock, new WindowsSensors());
+        thermometer = makeThermometer();
         temperatureTimer.Tick += (_, _) => ReadTemperatures();
-        ReadTemperatures();
         tray = new TrayIcon(messages);
         tray.Clicked += ToggleMenu;
         tray.Show();
@@ -115,6 +125,7 @@ sealed class App : Application
                 return new IntPtr(1);  // fine to sign out or shut down
             case WM_ENDSESSION when wParam != IntPtr.Zero:
                 // Signing out or shutting down, or the installer's Restart Manager asking the app to close
+                temperatureGuard.Close();
                 if (((long)lParam & ENDSESSION_CLOSEAPP) != 0) Dispatcher.BeginInvoke(Quit);
                 else tray.Dispose();
                 return IntPtr.Zero;
@@ -154,8 +165,6 @@ sealed class App : Application
         shortcuts.Rehook();
         snapper.Refresh();
         snipper.Refresh();
-        ReadTemperatures();
-        temperatureTimer.Start();
         var window = new MenuWindow();
         window.Toggled += Flip;
         window.Command += Run;
@@ -173,6 +182,9 @@ sealed class App : Application
         menu = window;
         window.Update(State());
         window.Open(tray.Bounds());
+        // The temperatures are asked for once the menu is up, so it never waits on them, and then every 2 minutes
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(ReadTemperatures));
+        temperatureTimer.Start();
     }
 
     MenuState State() => new(
@@ -194,18 +206,47 @@ sealed class App : Application
 
     void RefreshMenu() => menu?.Update(State());
 
-    /// <summary>In the background, then into the menu</summary>
+    /// <summary>The file that names the temperature source being asked, beside the settings</summary>
+    string TemperatureMarkerPath => Path.Combine(
+        Path.GetDirectoryName(Path.GetFullPath(options.SettingsPath ?? AppInfo.SettingsPath)) ?? AppInfo.DataFolder,
+        "temperature-asking.txt");
+
+    /// <summary>In the background, then into the menu. Nothing is asked while the menu is closed.</summary>
     internal async void ReadTemperatures()
     {
-        if (readingTemperatures || hasQuit) return;
+        if (hasQuit || menu == null) return;
+        if (readingTemperatures)
+        {
+            // Still asking. If one source has had no answer for too long, it's given up on: its thermometer is left
+            // waiting for it, and a new one reads the rest.
+            if (temperatureGuard.GiveUpIfStuck() == null)
+            {
+                // Meanwhile the numbers from before are too old to show
+                if (temperatures != null)
+                {
+                    temperatures = null;
+                    RefreshMenu();
+                }
+                return;
+            }
+            thermometer.Abandon();
+            thermometer = makeThermometer();
+        }
+        else if (!thermometer.IsDue)
+        {
+            return;
+        }
+        var reader = thermometer;
         readingTemperatures = true;
         try
         {
-            var reading = await thermometer.ReadAsync();
-            if (hasQuit) return;
+            var reading = await reader.ReadAsync();
+            // One that was given up on answered after all: too late
+            if (hasQuit || reader != thermometer) return;
             temperatures = reading;
             var report = reading.Report;
-            string sources = $"{report.Processor.Description}|{report.Other.Part}|{report.Other.Description}";
+            string sources = $"{report.Processor.Description}|{report.Processor.Unread}|{report.Other.Part}|"
+                + $"{report.Other.Description}|{report.Other.Unread}";
             if (sources != temperatureSources)
             {
                 temperatureSources = sources;
@@ -213,15 +254,25 @@ sealed class App : Application
             }
             RefreshMenu();
         }
-        catch (ObjectDisposedException)
-        {
-            // Quitting
-        }
         finally
         {
-            readingTemperatures = false;
+            if (reader == thermometer) readingTemperatures = false;
         }
     }
+
+    /// <summary>For the self-test: stand-ins for the guard and what's asked, or back to the real ones</summary>
+    internal void UseTemperatureSources(SourceGuard guard, Func<Thermometer> make)
+    {
+        thermometer.Abandon();
+        temperatureGuard = guard;
+        makeThermometer = make;
+        thermometer = make();
+        temperatures = null;
+        temperatureSources = null;
+        readingTemperatures = false;
+    }
+
+    internal (SourceGuard Guard, Func<Thermometer> Make) TemperatureSources => (temperatureGuard, makeThermometer);
 
     /// <summary>Runs once the menu has closed, or right away if it isn't open</summary>
     void CloseMenu(Action then)
@@ -304,6 +355,7 @@ sealed class App : Application
         hasQuit = true;
         menu?.Dismiss();
         temperatureTimer.Stop();
+        temperatureGuard.Close();
         tray.Dispose();
         snipper.Dispose();
         snapper.Dispose();
@@ -318,6 +370,7 @@ sealed class App : Application
         if (!hasQuit)
         {
             hasQuit = true;
+            temperatureGuard.Close();
             tray.Dispose();
             snipper.Dispose();
             snapper.Dispose();

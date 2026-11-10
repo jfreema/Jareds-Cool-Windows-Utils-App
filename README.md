@@ -98,9 +98,11 @@ GIFs show the pointer, but not the red line or **Stop**. They're 15 frames a sec
 
 Shows how hot it is inside your PC, in °F, so you can tell when it's running hot or overheating: the processor, and one more, like the motherboard.
 
-**Use it:** click the app's icon. **Temperature**, at the bottom of the menu, has the **Processor**, then the **Motherboard** if your PC shares it, or else the **Graphics Card**, another sensor **Inside Your PC**, or the **Drive** Windows is on. They update every 2 seconds while the menu is open, and the pill beside each says how hot that is. Rest the pointer on one to see where it comes from.
+**Use it:** click the app's icon. **Temperature**, at the bottom of the menu, has the **Processor**, then the **Motherboard** if your PC shares it, or else another sensor **Inside Your PC**. The pill beside each says how hot that is. Rest the pointer on one to see where it comes from.
 
-| Pill | Processor and graphics card | What it means |
+The app reads them when you open the menu, then once every 2 minutes while it's open, and not at all while it's closed. Opened again within 2 minutes, the menu shows what it read the last time. Until the first reading is in, a row says **Reading…**
+
+| Pill | Processor | What it means |
 |---|---|---|
 | **Cool**, blue | Below 98°F | Idle, or close to it. |
 | **Normal**, green | 98°F to 154°F | Everyday use. |
@@ -109,14 +111,18 @@ Shows how hot it is inside your PC, in °F, so you can tell when it's running ho
 | **Overheating**, red | 205°F to 225°F | At its limit, so it slows down to cool off. Give it air, and quit what's working it hard. |
 | **Critical**, red, with a warning sign | Above 225°F | Past the limit. Quit what's running and let it cool. |
 
-A motherboard runs cooler, so its levels start lower: normal from 86°F, warm from 122°F, hot from 140°F, overheating from 158°F and critical above 176°F. A drive is normal from 86°F, warm from 131°F, hot from 158°F, overheating from 167°F and critical above 175°F, or sooner when the drive itself says it's too hot. When Windows is slowing your PC down to cool it off, the processor's pill says **Hot** at least, and resting the pointer on it says so.
+A motherboard runs cooler, so its levels start lower: normal from 86°F, warm from 122°F, hot from 140°F, overheating from 158°F and critical above 176°F. When Windows is slowing your PC down to cool it off, the processor's pill says **Hot** at least, and resting the pointer on it says so.
 
-**Can't read it:** Windows only knows the temperatures your PC's firmware, graphics card and drive tell it. Laptops often tell it the processor's, but desktops often don't, and reading those takes a driver, which the app doesn't install.
+**Can't read it:** the app shows the temperatures your PC's firmware tells Windows. A laptop's often tells it the processor's, but a desktop's often doesn't, and reading those takes a driver, which the app doesn't install.
+
+**The graphics card and the drive are left alone for now.** Version 0.4.0 also asked the graphics card and the drive how hot they are, every 2 seconds, and a PC froze with its menu open. Until it's known which of the two did it, the app asks neither, and reads only what your PC's firmware has already told Windows. If that's ever slow to come, never comes, or your PC stops in the middle of it, the app stops reading it, and resting the pointer on the reading says so. [Troubleshooting](docs/troubleshooting.md#temperature) says how to have it read again.
 
 <details>
 <summary>How it works</summary>
 
-The processor's temperature comes from your PC's thermal zones, the sensors its firmware tells Windows about, which Windows shares through its performance counters. A sensor named for the processor goes first, or else the hottest one that doesn't say what it's of, since on most laptops that one follows the processor. The motherboard is a sensor named for it, like the chipset's or the case's. The graphics card's temperature is the one Task Manager shows, from the card's driver, and the drive's comes from the drive. None of it needs an administrator.
+The processor's temperature comes from your PC's thermal zones, the sensors its firmware tells Windows about, which Windows shares through its performance counters. A sensor named for the processor goes first, or else the hottest one that doesn't say what it's of, since on most laptops that one follows the processor. The motherboard is a sensor named for it, like the chipset's or the case's. None of it needs an administrator, and Windows already has the numbers, so the app doesn't ask the sensors themselves.
+
+While the app is reading, a small file beside its settings, `temperature-asking.txt`, says what it's reading. If the app finds it still saying so as it starts, your PC or the app stopped in the middle of that, and the app doesn't read it again. A reading that takes a quarter of a second is done once in 10 minutes at most.
 
 </details>
 

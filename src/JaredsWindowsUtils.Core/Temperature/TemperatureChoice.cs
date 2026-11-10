@@ -58,8 +58,36 @@ public static class TemperatureChoice
 
     static bool IsPlausible(double celsius) => celsius is >= Lowest and <= Highest;
 
+    /// <param name="leftOut">The sources the app no longer asks, which a reading that's missing says</param>
     public static TemperatureReport Choose(IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics,
-        DriveTemperature? drive)
+        DriveTemperature? drive, IReadOnlyList<LeftOut>? leftOut = null)
+    {
+        var (processor, preferred, hottest) = Pick(zones, graphics);
+        // Last, a zone cooler than a processor: likely the air inside, or a number that never changes
+        var other = preferred ?? FromDrive(drive)
+            ?? (hottest(_ => true) is { } any
+                ? new TemperatureRow(HeatPart.Inside, any.Celsius, $"A sensor inside your PC, {ShortName(any.Name)}")
+                : new TemperatureRow(HeatPart.Motherboard, null));
+        if (leftOut is { Count: > 0 })
+        {
+            if (processor.Celsius == null
+                && leftOut.FirstOrDefault(entry => entry.Source == TemperatureSource.Zones) is { } zonesOut)
+                processor = processor with { Unread = zonesOut.Sentence };
+            if (other.Celsius == null)
+                other = other with { Unread = string.Join(" ", leftOut.Select(entry => entry.Sentence)) };
+        }
+        return new TemperatureReport(processor, other);
+    }
+
+    /// <summary>Whether the drive's temperature would be shown, so it's only asked when it would be: when neither the
+    /// thermal zones nor the graphics cards give the second reading</summary>
+    public static bool WantsDrive(IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics) =>
+        Pick(zones, graphics).Preferred == null;
+
+    /// <summary>The processor's row, the second row if it's better than the drive, and the way to the zones not yet
+    /// shown</summary>
+    static (TemperatureRow Processor, TemperatureRow? Preferred, Func<Func<ThermalZone, bool>, ThermalZone?> Hottest) Pick(
+        IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics)
     {
         var shown = zones.Where(zone => IsPlausible(zone.Celsius) && Kind(zone.Name) != ZoneKind.Battery).ToList();
         var used = new HashSet<ThermalZone>();
@@ -85,12 +113,12 @@ public static class TemperatureChoice
         else
             processor = new TemperatureRow(HeatPart.Processor, null, null, floor, note);
 
-        return new TemperatureReport(processor, Other(Hottest, graphics, drive));
+        return (processor, Preferred(Hottest, graphics), Hottest);
     }
 
-    /// <summary>The motherboard, else the graphics card, else another sensor inside, else the drive</summary>
-    static TemperatureRow Other(Func<Func<ThermalZone, bool>, ThermalZone?> hottest,
-        IReadOnlyList<GraphicsTemperature> graphics, DriveTemperature? drive)
+    /// <summary>The motherboard, else the graphics card, else another sensor inside. Failing those, the drive.</summary>
+    static TemperatureRow? Preferred(Func<Func<ThermalZone, bool>, ThermalZone?> hottest,
+        IReadOnlyList<GraphicsTemperature> graphics)
     {
         if (hottest(z => Kind(z.Name) == ZoneKind.Board) is { } board)
             return new TemperatureRow(HeatPart.Motherboard, board.Celsius,
@@ -112,28 +140,24 @@ public static class TemperatureChoice
             return new TemperatureRow(HeatPart.Inside, inside.Celsius,
                 $"A sensor inside your PC, {ShortName(inside.Name)}");
 
-        if (drive != null && IsPlausible(drive.Celsius))
+        return null;
+    }
+
+    static TemperatureRow? FromDrive(DriveTemperature? drive)
+    {
+        if (drive == null || !IsPlausible(drive.Celsius)) return null;
+        HeatLevel? floor = null;
+        string? note = null;
+        if (drive.Critical is { } critical && IsPlausible(critical) && drive.Celsius >= critical)
         {
-            HeatLevel? floor = null;
-            string? note = null;
-            if (drive.Critical is { } critical && IsPlausible(critical) && drive.Celsius >= critical)
-            {
-                floor = HeatLevel.Critical;
-                note = "The drive says it's hot enough to be damaged.";
-            }
-            else if (drive.Warning is { } warning && IsPlausible(warning) && drive.Celsius >= warning)
-            {
-                floor = HeatLevel.Overheating;
-                note = "The drive says it's too hot.";
-            }
-            return new TemperatureRow(HeatPart.Drive, drive.Celsius, $"The drive Windows is on, {drive.Name}", floor,
-                note);
+            floor = HeatLevel.Critical;
+            note = "The drive says it's hot enough to be damaged.";
         }
-
-        // Cooler than a processor: likely the air inside, or a number that never changes
-        if (hottest(_ => true) is { } any)
-            return new TemperatureRow(HeatPart.Inside, any.Celsius, $"A sensor inside your PC, {ShortName(any.Name)}");
-
-        return new TemperatureRow(HeatPart.Motherboard, null);
+        else if (drive.Warning is { } warning && IsPlausible(warning) && drive.Celsius >= warning)
+        {
+            floor = HeatLevel.Overheating;
+            note = "The drive says it's too hot.";
+        }
+        return new TemperatureRow(HeatPart.Drive, drive.Celsius, $"The drive Windows is on, {drive.Name}", floor, note);
     }
 }

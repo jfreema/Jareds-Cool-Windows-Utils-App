@@ -83,6 +83,11 @@ doesn't share one says so.
       down to cool it
 - [x] The self-test reads them and checks the menu on GitHub's Windows machines, which have no sensors to read
 - [x] Released
+- [x] 0.4.1: Jared's PC froze with 0.4.0's menu open, which read the temperatures as the app started and every 2
+      seconds, and stayed frozen until he turned it off. Now nothing is read until the menu opens, then once every 2
+      minutes, as he asked. The graphics card and the drive aren't asked at all, and a reading that's slow, never
+      comes, or was being waited for when the PC stopped isn't asked for again.
+- [ ] Find out from Jared's log whether it was the graphics card or the drive, and put the other one back, carefully
 - [ ] Tried on Jared's Windows PC
 
 ## 0.5.0: Stay awake with the lid closed

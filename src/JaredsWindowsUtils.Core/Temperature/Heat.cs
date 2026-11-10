@@ -67,8 +67,9 @@ public static class Heat
 /// <param name="Floor">How hot it is at least, whatever the number, as when Windows is slowing the PC down to cool
 /// it</param>
 /// <param name="Note">Why it's at least that hot, for the tooltip</param>
+/// <param name="Unread">Why it can't be read, when that isn't that Windows doesn't have it: the app no longer asks</param>
 public sealed record TemperatureRow(HeatPart Part, double? Celsius, string? Description = null,
-    HeatLevel? Floor = null, string? Note = null)
+    HeatLevel? Floor = null, string? Note = null, string? Unread = null)
 {
     public string Title => Part switch
     {
@@ -99,7 +100,7 @@ public sealed record TemperatureRow(HeatPart Part, double? Celsius, string? Desc
         get
         {
             string text = Celsius == null
-                ? $"Windows doesn't get the {Missing}'s temperature on this PC. Reading it would take a driver."
+                ? Unread ?? $"Windows doesn't get the {Missing}'s temperature on this PC. Reading it would take a driver."
                 : $"{Description ?? Title}: {Heat.Scale(Part)}.";
             return Note == null ? text : $"{text} {Note}";
         }

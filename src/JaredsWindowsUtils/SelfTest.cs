@@ -56,6 +56,10 @@ static partial class SelfTest
                 if (free) UnregisterHotKey(IntPtr.Zero, 0xBFFF);
             }
 
+            // 0.4.0 asked as it started, and every 2 seconds with the menu open
+            Add("no temperature is asked for before the menu opens", app.Temperatures == null,
+                app.Temperatures?.Sources ?? "none read yet");
+
             // The menu where it opens, and pictures of it and the dialogs, with temperatures like the Mac README's
             app.PictureTemperatures = PictureTemperatures;
             app.ShowMenu();

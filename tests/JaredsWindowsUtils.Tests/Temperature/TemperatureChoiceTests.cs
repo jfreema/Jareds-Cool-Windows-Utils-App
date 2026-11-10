@@ -160,4 +160,58 @@ public class TemperatureChoiceTests
         var none = TemperatureChoice.Choose([], NoCards, new DriveTemperature("SSD", 40, 0, 0));
         Assert.Equal(HeatLevel.Normal, none.Other.Level);
     }
+
+    [Fact]
+    public void TheDriveIsWantedOnlyWhenNothingElseGivesTheSecondReading()
+    {
+        Assert.True(TemperatureChoice.WantsDrive([], NoCards));
+        Assert.True(TemperatureChoice.WantsDrive([new(@"\_TZ.CPUZ", 50)], NoCards));
+        // A cool sensor that doesn't say what it's of comes after the drive
+        Assert.True(TemperatureChoice.WantsDrive([new(@"\_TZ.TZ00", 27.85)], NoCards));
+        // Neither a battery nor a card with no reading counts
+        Assert.True(TemperatureChoice.WantsDrive([new(@"\_TZ.CPUZ", 50), new(@"\_TZ.BATZ", 35)],
+            [new("Microsoft Basic Render Driver", 0)]));
+        Assert.False(TemperatureChoice.WantsDrive([new(@"\_TZ.CPUZ", 50), new(@"\_TZ.PCHZ", 40)], NoCards));
+        Assert.False(TemperatureChoice.WantsDrive([], [new("Card", 45)]));
+        Assert.False(TemperatureChoice.WantsDrive([new(@"\_TZ.CPUZ", 50), new(@"\_TZ.GFXZ", 45)], NoCards));
+        Assert.False(TemperatureChoice.WantsDrive([new(@"\_TZ.TZ00", 50), new(@"\_TZ.TZ01", 40)], NoCards));
+    }
+
+    [Fact]
+    public void ARowThatCantBeReadSaysWhenTheAppNoLongerAsks()
+    {
+        const string sensors = "The app no longer asks your PC's sensors for their temperatures, since it got no answer.";
+        var report = TemperatureChoice.Choose([], NoCards, null,
+            [new LeftOut(TemperatureSource.Zones, LeftOutBecause.Stuck)]);
+        Assert.Equal(sensors, report.Processor.Explanation);
+        Assert.Equal(sensors, report.Other.Explanation);
+
+        // The processor's row speaks only of the PC's sensors, the other of everything that might have filled it
+        IReadOnlyList<LeftOut> two =
+        [
+            new(TemperatureSource.Graphics, LeftOutBecause.Stopped), new(TemperatureSource.Drive, LeftOutBecause.TooSlow),
+        ];
+        report = TemperatureChoice.Choose([], NoCards, null, two);
+        Assert.Equal("Windows doesn't get the processor's temperature on this PC. Reading it would take a driver.",
+            report.Processor.Explanation);
+        Assert.Equal("The app no longer asks the graphics card for its temperature, since your PC or the app stopped "
+            + "the last time it did. The app no longer asks the drive for its temperature, since the answer took too "
+            + "long.", report.Other.Explanation);
+
+        // A row with a reading has nothing to explain
+        report = TemperatureChoice.Choose([new(@"\_TZ.CPUZ", 50), new(@"\_TZ.PCHZ", 40)], NoCards, null, two);
+        Assert.Null(report.Processor.Unread);
+        Assert.Null(report.Other.Unread);
+        Assert.StartsWith("The motherboard, from the PC's sensor PCHZ: ", report.Other.Explanation);
+    }
+
+    [Fact]
+    public void WindowsSlowingThePcDownIsStillSaidOfARowTheAppNoLongerAsksFor()
+    {
+        var report = TemperatureChoice.Choose([new(@"\_TZ.SKIN", 46, 60)], NoCards, null,
+            [new LeftOut(TemperatureSource.Graphics, LeftOutBecause.Stuck)]);
+        Assert.Equal("Windows doesn't get the processor's temperature on this PC. Reading it would take a driver. "
+            + "Windows is slowing your PC down to cool it off.", report.Processor.Explanation);
+        Assert.Equal(HeatLevel.Hot, report.Processor.Level);
+    }
 }

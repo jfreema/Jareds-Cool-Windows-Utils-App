@@ -50,6 +50,10 @@ static partial class Native
     public const uint KMTQAITYPE_ADAPTERPERFDATA_CAPS = 63;
     /// <summary>D3DKMT_ADAPTERREGISTRYINFO: the card's name first, in 260 wide characters</summary>
     public const uint KMTQAITYPE_ADAPTERREGISTRYINFO = 8;
+    /// <summary>D3DKMT_DRIVERVERSION: the driver model in 4 bytes, like 2400 for WDDM 2.4</summary>
+    public const uint KMTQAITYPE_DRIVERVERSION = 13;
+    /// <summary>D3DKMT_ADAPTERTYPE: what kind of card it is, as flags in 4 bytes, which Core's SafeToAsk reads</summary>
+    public const uint KMTQAITYPE_ADAPTERTYPE = 15;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct D3DKMT_ENUMADAPTERS2
@@ -101,6 +105,8 @@ static partial class Native
     public const uint OPEN_EXISTING = 3;
     public const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
     public const uint IOCTL_STORAGE_GET_DEVICE_NUMBER = 0x002D1080;
+    /// <summary>STORAGE_DEVICE_DESCRIPTOR: where the vendor's and product's names start at bytes 12 and 16, and the
+    /// bus type (STORAGE_BUS_TYPE) at byte 28</summary>
     public const int StorageDeviceProperty = 0;
     /// <summary>STORAGE_TEMPERATURE_DATA_DESCRIPTOR: the warning and critical temperatures at bytes 8 and 10, then
     /// 16-byte readings from byte 24, each with its temperature at byte 2, all in °C</summary>
@@ -135,4 +141,8 @@ static partial class Native
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, int inputSize,
         out STORAGE_DEVICE_NUMBER output, int outputSize, out int returned, IntPtr overlapped);
+
+    /// <summary>Time since Windows started, in 100-nanosecond steps, leaving out the time it slept</summary>
+    [DllImport("kernel32.dll")]
+    public static extern bool QueryUnbiasedInterruptTime(out ulong time);
 }

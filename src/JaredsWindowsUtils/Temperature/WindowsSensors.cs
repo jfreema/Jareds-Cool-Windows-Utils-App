@@ -1,4 +1,4 @@
-using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using JaredsWindowsUtils.Core.Temperature;
@@ -7,20 +7,22 @@ using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Temperature;
 
-/// <summary>Everything read at once: what each source had, and what the menu shows from it</summary>
-/// <param name="Sources">What was found, for the log and the self-test</param>
-sealed record TemperatureReading(IReadOnlyList<ThermalZone> Zones, IReadOnlyList<GraphicsTemperature> Graphics,
-    DriveTemperature? Drive, TemperatureReport Report, string Sources);
-
-/// <summary>Reads the temperatures Windows shares without a driver or an administrator: the firmware's ACPI thermal
-/// zones through Windows' performance counters, each graphics card's own sensor as Task Manager reads it, and the
-/// drive Windows is on. A desktop's processor and motherboard often take a driver to read, which the app doesn't use
-/// (Jared's choice, November 9, 2026). Read off the UI thread, since a card or a drive can take a moment.</summary>
-sealed class Thermometer : IDisposable
+/// <summary>The temperatures Windows shares without a driver or an administrator: the firmware's ACPI thermal zones
+/// through Windows' performance counters, each graphics card's own sensor as Task Manager reads it, and the drive
+/// Windows is on. A desktop's processor and motherboard often take a driver to read, which the app doesn't use
+/// (Jared's choice, November 9, 2026).
+///
+/// <para>Only what's safe to ask is asked, since Jared's PC seemed to lock up with 0.4.0's menu open (November 10,
+/// 2026). The thermal zones are numbers Windows already has. A graphics card is asked only if it's real, awake
+/// whenever the PC is, and its driver is new enough to say: asking a laptop's second card would wake it, which can
+/// freeze the screen for a moment each time. The drive is asked only if it's an NVMe drive, which answers on the side:
+/// a SATA drive stops what it's doing to answer, and some take a while. <see cref="SafeToAsk"/> decides both. The
+/// <see cref="Thermometer"/> asks the drive only when nothing else gives the second reading, and the
+/// <see cref="SourceGuard"/> stops asking anything that's slow.</para></summary>
+sealed class WindowsSensors : ISensors, IDisposable
 {
     const string ZoneCounters = @"\Thermal Zone Information(*)\";
 
-    readonly Lock gate = new();
     IntPtr query;
     /// <summary>Tenths of a kelvin</summary>
     IntPtr precise;
@@ -28,91 +30,65 @@ sealed class Thermometer : IDisposable
     IntPtr plain;
     IntPtr passive;
     bool opened;
-    string? zoneProblem;
+    string? zoneNote;
+    /// <summary>By the card's LUID, asked for once</summary>
+    readonly Dictionary<long, string> cardNames = [];
+    string? cardNote;
     int? disk;
     string? diskName;
-    string? diskProblem;
-    bool disposed;
+    int diskBus;
+    string? driveNote;
 
-    public Task<TemperatureReading> ReadAsync() => Task.Run(Read);
+    /// <summary>Time that stands still while the PC sleeps, for the guard: a question asked as the PC goes to sleep
+    /// isn't a slow one</summary>
+    public static TimeSpan Clock() => QueryUnbiasedInterruptTime(out ulong ticks)
+        ? TimeSpan.FromTicks((long)ticks)
+        : Stopwatch.GetElapsedTime(0);
 
-    public TemperatureReading Read()
+    public void Prepare(TemperatureSource source)
     {
-        lock (gate)
-        {
-            ObjectDisposedException.ThrowIf(disposed, this);
-            var notes = new List<string>();
-            var zones = Guard("thermal zones", ReadZones, [], notes);
-            var graphics = Guard("graphics cards", ReadGraphics, [], notes);
-            var drive = Guard("drive", ReadDrive, null, notes);
-            var report = TemperatureChoice.Choose(zones, graphics, drive);
-            return new TemperatureReading(zones, graphics, drive, report, Describe(zones, graphics, drive, notes));
-        }
+        if (source == TemperatureSource.Zones) OpenZones();
     }
 
-    /// <summary>A source that fails leaves the others to it, and says why in the log</summary>
-    static T Guard<T>(string what, Func<T> read, T otherwise, List<string> notes)
+    public string? Note(TemperatureSource source) => source switch
     {
-        try
-        {
-            return read();
-        }
-        catch (Exception exception) when (exception is DllNotFoundException or EntryPointNotFoundException
-            or ExternalException or IOException or UnauthorizedAccessException or ArgumentException
-            or InvalidOperationException or OverflowException)
-        {
-            notes.Add($"{what} failed: {exception.Message}");
-            return otherwise;
-        }
-    }
-
-    string Describe(IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics,
-        DriveTemperature? drive, List<string> notes)
-    {
-        static string C(double celsius) => celsius.ToString("0.0", CultureInfo.InvariantCulture) + "°C";
-        string zoneText = zones.Count > 0
-            ? string.Join(", ", zones.Select(z => $"{z.Name} {C(z.Celsius)}"
-                + (z.PassiveLimit is { } limit ? $" at {limit:0}% speed" : "")))
-            : "none" + (zoneProblem != null ? $" ({zoneProblem})" : "");
-        string cardText = graphics.Count > 0
-            ? string.Join(", ", graphics.Select(g => $"{g.Name} {C(g.Celsius)}"
-                + (g.SlowsAt is { } at ? $", slows at {C(at)}" : "")))
-            : "none with a temperature";
-        string driveText = drive is { } d
-            ? $"{d.Name} {C(d.Celsius)}" + (d.Warning is { } warning ? $", warning at {C(warning)}" : "")
-                + (d.Critical is { } critical ? $", critical at {C(critical)}" : "")
-            : diskProblem ?? "none";
-        var text = $"thermal zones: {zoneText}; graphics: {cardText}; drive: {driveText}";
-        return notes.Count > 0 ? $"{text}; {string.Join("; ", notes)}" : text;
-    }
+        TemperatureSource.Zones => zoneNote,
+        TemperatureSource.Graphics => cardNote,
+        _ => driveNote,
+    };
 
     // Thermal zones
 
-    List<ThermalZone> ReadZones()
+    /// <summary>Once. It can take a second or more, as Windows loads what it needs to count.</summary>
+    void OpenZones()
     {
-        if (!opened)
+        if (opened) return;
+        opened = true;
+        uint status = PdhOpenQueryW(null, IntPtr.Zero, out query);
+        if (status != 0)
         {
-            opened = true;
-            uint status = PdhOpenQueryW(null, IntPtr.Zero, out query);
-            if (status != 0)
-            {
-                query = IntPtr.Zero;
-                zoneProblem = $"no performance counters, 0x{status:X8}";
-                return [];
-            }
-            precise = Add("High Precision Temperature", out _);
-            plain = Add("Temperature", out uint plainStatus);
-            passive = Add("% Passive Limit", out _);
-            if (precise == IntPtr.Zero && plain == IntPtr.Zero) zoneProblem = $"no counters, 0x{plainStatus:X8}";
+            query = IntPtr.Zero;
+            zoneNote = $"no performance counters, 0x{status:X8}";
+            return;
         }
+        precise = Add("High Precision Temperature", out _);
+        plain = Add("Temperature", out uint plainStatus);
+        passive = Add("% Passive Limit", out _);
+        if (precise == IntPtr.Zero && plain == IntPtr.Zero) zoneNote = $"no counters, 0x{plainStatus:X8}";
+    }
+
+    /// <summary>What Windows last heard from the firmware: it doesn't ask the sensors for this</summary>
+    public IReadOnlyList<ThermalZone> Zones()
+    {
+        OpenZones();
         if (query == IntPtr.Zero || (precise == IntPtr.Zero && plain == IntPtr.Zero)) return [];
         uint collected = PdhCollectQueryData(query);
         if (collected != 0)
         {
-            zoneProblem = $"none to read, 0x{collected:X8}";
+            zoneNote = $"none to read, 0x{collected:X8}";
             return [];
         }
-        zoneProblem = null;
+        zoneNote = null;
         var tenths = Values(precise);
         var kelvins = Values(plain);
         var limits = Values(passive);
@@ -163,26 +139,45 @@ sealed class Thermometer : IDisposable
 
     // Graphics cards
 
-    static List<GraphicsTemperature> ReadGraphics()
+    public IReadOnlyList<GraphicsTemperature> Graphics()
     {
         var cards = new List<GraphicsTemperature>();
+        var others = new List<string>();
         var enumerate = new D3DKMT_ENUMADAPTERS2();
-        if (D3DKMTEnumAdapters2(ref enumerate) != 0 || enumerate.NumAdapters == 0) return cards;
-        uint room = enumerate.NumAdapters;
+        // With nowhere to put them, Windows says how many there may be
+        uint room = D3DKMTEnumAdapters2(ref enumerate) == 0 && enumerate.NumAdapters is > 0 and <= 64
+            ? enumerate.NumAdapters
+            : 16;
         int size = Marshal.SizeOf<D3DKMT_ADAPTERINFO>();
         var adapters = Marshal.AllocHGlobal(size * (int)room);
         try
         {
+            enumerate.NumAdapters = room;
             enumerate.pAdapters = adapters;
             // Opens each one, to be closed after
-            if (D3DKMTEnumAdapters2(ref enumerate) != 0) return cards;
-            for (int index = 0; index < Math.Min(enumerate.NumAdapters, room); index++)
+            int status = D3DKMTEnumAdapters2(ref enumerate);
+            if (status != 0)
+            {
+                cardNote = $"Windows didn't list the graphics cards, 0x{status:X8}";
+                return cards;
+            }
+            uint count = Math.Min(enumerate.NumAdapters, room);
+            for (int index = 0; index < count; index++)
             {
                 var adapter = Marshal.PtrToStructure<D3DKMT_ADAPTERINFO>(adapters + index * size);
                 try
                 {
-                    if (CardTemperature(adapter.hAdapter) is { } celsius)
-                        cards.Add(new GraphicsTemperature(CardName(adapter.hAdapter), celsius, SlowsAt(adapter.hAdapter)));
+                    string name = CardName(adapter);
+                    uint? kind = Number(adapter.hAdapter, KMTQAITYPE_ADAPTERTYPE);
+                    uint? driver = Number(adapter.hAdapter, KMTQAITYPE_DRIVERVERSION);
+                    string facts = $"kind {(kind is { } flags ? $"0x{flags:X}" : "unknown")}, "
+                        + $"WDDM {driver?.ToString() ?? "unknown"}";
+                    if (SafeToAsk.WhyNotCard(kind, driver) is { } why)
+                        others.Add($"{name} isn't asked, {why} ({facts})");
+                    else if (CardTemperature(adapter.hAdapter) is { } celsius)
+                        cards.Add(new GraphicsTemperature(name, celsius, SlowsAt(adapter.hAdapter)));
+                    else
+                        others.Add($"{name} has no temperature ({facts})");
                 }
                 finally
                 {
@@ -190,6 +185,7 @@ sealed class Thermometer : IDisposable
                     D3DKMTCloseAdapter(ref close);
                 }
             }
+            cardNote = count == 0 ? "Windows listed no graphics cards" : others.Count > 0 ? string.Join(", ", others) : null;
         }
         finally
         {
@@ -198,8 +194,7 @@ sealed class Thermometer : IDisposable
         return cards;
     }
 
-    /// <summary>The card's own sensor, or null if it has none, like Windows' software renderer and most built-in
-    /// graphics</summary>
+    /// <summary>The card's own sensor, or null if it has none, like most built-in graphics</summary>
     static unsafe double? CardTemperature(uint adapter)
     {
         const int size = 64;
@@ -221,17 +216,32 @@ sealed class Thermometer : IDisposable
         return tenths > 0 ? tenths / 10.0 : null;
     }
 
-    static unsafe string CardName(uint adapter)
+    /// <summary>A fact Windows keeps about the card, which it gives without asking the card</summary>
+    static unsafe uint? Number(uint adapter, uint type)
     {
+        uint value = 0;
+        return Query(adapter, type, (byte*)&value, sizeof(uint)) ? value : null;
+    }
+
+    /// <summary>From the registry, where the card's driver put it</summary>
+    unsafe string CardName(D3DKMT_ADAPTERINFO adapter)
+    {
+        long luid = ((long)adapter.AdapterLuidHighPart << 32) | adapter.AdapterLuidLowPart;
+        if (cardNames.TryGetValue(luid, out var known)) return known;
         const int characters = 260;
         const int size = 4 * characters * sizeof(char);
         byte* data = stackalloc byte[size];
         new Span<byte>(data, size).Clear();
-        if (!Query(adapter, KMTQAITYPE_ADAPTERREGISTRYINFO, data, size)) return "the graphics card";
-        var text = new ReadOnlySpan<char>(data, characters);
-        int end = text.IndexOf('\0');
-        var name = new string(end >= 0 ? text[..end] : text).Trim();
-        return name.Length > 0 ? name : "the graphics card";
+        string name = "a graphics card";
+        if (Query(adapter.hAdapter, KMTQAITYPE_ADAPTERREGISTRYINFO, data, size))
+        {
+            var text = new ReadOnlySpan<char>(data, characters);
+            int end = text.IndexOf('\0');
+            var said = new string(end >= 0 ? text[..end] : text).Trim();
+            if (said.Length > 0) name = said;
+        }
+        cardNames[luid] = name;
+        return name;
     }
 
     static unsafe bool Query(uint adapter, uint type, byte* data, int size)
@@ -248,16 +258,34 @@ sealed class Thermometer : IDisposable
 
     // The drive
 
-    DriveTemperature? ReadDrive()
+    public DriveTemperature? Drive()
     {
-        disk ??= SystemDisk() ?? 0;
-        using var device = Open($@"\\.\PhysicalDrive{disk}");
-        if (device.IsInvalid)
+        if ((disk ??= SystemDisk()) is not { } number)
         {
-            diskProblem = $"couldn't open drive {disk}, error {Marshal.GetLastWin32Error()}";
+            driveNote = "couldn't tell which drive Windows is on";
             return null;
         }
-        diskName ??= ProductName(device) ?? $"drive {disk}";
+        using var device = Open($@"\\.\PhysicalDrive{number}");
+        if (device.IsInvalid)
+        {
+            driveNote = $"couldn't open drive {number}, error {Marshal.GetLastWin32Error()}";
+            return null;
+        }
+        if (diskName == null)
+        {
+            if (Describe(device) is not { } described)
+            {
+                driveNote = $"drive {number} doesn't say what it is";
+                return null;
+            }
+            (diskName, diskBus) = described;
+        }
+        // Windows knows this much without asking the drive. Only an NVMe drive is asked how hot it is.
+        if (SafeToAsk.WhyNotDrive(diskBus) is { } why)
+        {
+            driveNote = $"{diskName} isn't asked, since {why}";
+            return null;
+        }
         const int size = 1024;
         var buffer = Marshal.AllocHGlobal(size);
         try
@@ -266,19 +294,19 @@ sealed class Thermometer : IDisposable
             if (!DeviceIoControl(device, IOCTL_STORAGE_QUERY_PROPERTY, ref question,
                     Marshal.SizeOf<STORAGE_PROPERTY_QUERY>(), buffer, size, out int returned, IntPtr.Zero))
             {
-                diskProblem = $"{diskName} doesn't say its temperature, error {Marshal.GetLastWin32Error()}";
+                driveNote = $"{diskName} doesn't say its temperature, error {Marshal.GetLastWin32Error()}";
                 return null;
             }
             // The header, then a reading of 16 bytes each, the drive's own first
             if (returned < 24 + 16 || Marshal.ReadInt16(buffer, 12) == 0)
             {
-                diskProblem = $"{diskName} has no temperature";
+                driveNote = $"{diskName} has no temperature";
                 return null;
             }
             short critical = Marshal.ReadInt16(buffer, 8);
             short warning = Marshal.ReadInt16(buffer, 10);
             short celsius = Marshal.ReadInt16(buffer, 24 + 2);
-            diskProblem = null;
+            driveNote = null;
             return new DriveTemperature(diskName, celsius, warning > 0 ? warning : null, critical > 0 ? critical : null);
         }
         finally
@@ -304,8 +332,9 @@ sealed class Thermometer : IDisposable
             : null;
     }
 
-    /// <summary>Its maker and model, like Samsung SSD 980 PRO 1TB</summary>
-    static string? ProductName(SafeFileHandle device)
+    /// <summary>Its maker and model, like Samsung SSD 980 PRO 1TB, and how it's connected (STORAGE_BUS_TYPE). Windows
+    /// has both from when it found the drive.</summary>
+    static (string Name, int Bus)? Describe(SafeFileHandle device)
     {
         const int size = 1024;
         var buffer = Marshal.AllocHGlobal(size);
@@ -321,11 +350,14 @@ sealed class Thermometer : IDisposable
                 : null;
             var vendor = Text(Marshal.ReadInt32(buffer, 12));
             var product = Text(Marshal.ReadInt32(buffer, 16));
-            if (string.IsNullOrEmpty(product)) return null;
-            return string.IsNullOrEmpty(vendor) || vendor is "NVMe" or "ATA"
-                || product.StartsWith(vendor, StringComparison.OrdinalIgnoreCase)
-                ? product
-                : $"{vendor} {product}";
+            int bus = Marshal.ReadInt32(buffer, 28);
+            string name = string.IsNullOrEmpty(product)
+                ? "the drive"
+                : string.IsNullOrEmpty(vendor) || vendor is "NVMe" or "ATA"
+                    || product.StartsWith(vendor, StringComparison.OrdinalIgnoreCase)
+                    ? product
+                    : $"{vendor} {product}";
+            return (name, bus);
         }
         finally
         {
@@ -335,12 +367,7 @@ sealed class Thermometer : IDisposable
 
     public void Dispose()
     {
-        lock (gate)
-        {
-            if (disposed) return;
-            disposed = true;
-            if (query != IntPtr.Zero) PdhCloseQuery(query);
-            query = IntPtr.Zero;
-        }
+        if (query != IntPtr.Zero) PdhCloseQuery(query);
+        query = IntPtr.Zero;
     }
 }

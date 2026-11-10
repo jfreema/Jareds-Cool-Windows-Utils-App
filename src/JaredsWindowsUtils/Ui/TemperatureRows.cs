@@ -7,7 +7,8 @@ using JaredsWindowsUtils.Core.Temperature;
 namespace JaredsWindowsUtils.Ui;
 
 /// <summary>A temperature in the menu, as on the Mac: what it's of, the number in °F, and a pill that says how hot that
-/// is. Its tooltip says where it comes from and where the levels start.</summary>
+/// is. Its tooltip says where it comes from and where the levels start. Until it's read, it says Reading…: the
+/// temperatures are only asked for once the menu is open.</summary>
 sealed class TemperatureRowView : FrameworkElement
 {
     public const double RowHeight = 36;
@@ -22,6 +23,7 @@ sealed class TemperatureRowView : FrameworkElement
         this.title = title;
         this.showsDivider = showsDivider;
         AutomationProperties.SetName(this, $"{title} temperature");
+        AutomationProperties.SetItemStatus(this, "reading");
         ToolTipService.SetShowDuration(this, 20000);
     }
 
@@ -35,7 +37,7 @@ sealed class TemperatureRowView : FrameworkElement
             row = value;
             if (value != null) title = value.Title;
             AutomationProperties.SetName(this, $"{title} temperature");
-            AutomationProperties.SetItemStatus(this, value?.Spoken ?? "");
+            AutomationProperties.SetItemStatus(this, value?.Spoken ?? "reading");
             ToolTip = value?.Explanation;
             InvalidateVisual();
         }
@@ -52,9 +54,15 @@ sealed class TemperatureRowView : FrameworkElement
         if (showsDivider) context.DrawRectangle(Bubble.Divider, null, new Rect(0, 0, ActualWidth, 1));
         var name = Bubble.Text(title, Bubble.BodyFace, 13, Bubble.Ink, this);
         context.DrawText(name, new Point(12, Math.Round((ActualHeight - name.Height) / 2)));
-        if (row == null) return;
 
         double right = ActualWidth - 10;
+        if (row == null)
+        {
+            var waiting = Bubble.Text("Reading…", Bubble.BodyFace, 12, Bubble.WithOpacity(Bubble.Ink, 0.6), this);
+            context.DrawText(waiting, new Point(right - waiting.WidthIncludingTrailingWhitespace,
+                Math.Round((ActualHeight - waiting.Height) / 2)));
+            return;
+        }
         if (row.Level is { } level)
         {
             double width = HeatPill.Width(level, this);
