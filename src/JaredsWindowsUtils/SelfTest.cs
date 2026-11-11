@@ -56,12 +56,7 @@ static partial class SelfTest
                 if (free) UnregisterHotKey(IntPtr.Zero, 0xBFFF);
             }
 
-            // 0.4.0 asked as it started, and every 2 seconds with the menu open
-            Add("no temperature is asked for before the menu opens", app.Temperatures == null,
-                app.Temperatures?.Sources ?? "none read yet");
-
-            // The menu where it opens, and pictures of it and the dialogs, with temperatures like the Mac README's
-            app.PictureTemperatures = PictureTemperatures;
+            // The menu where it opens, and pictures of it and the dialogs
             app.ShowMenu();
             await Task.Delay(1200);
             if (app.Menu is { } menu)
@@ -80,7 +75,6 @@ static partial class SelfTest
             }
             await Task.Delay(300);
             Add("menu closes", app.Menu == null);
-            app.PictureTemperatures = null;
             await Picture(AboutWindow.Create(), folder, "about");
             await Picture(BubbleDialog.Create($"{AppInfo.Name} 0.1.1 is available",
                 $"You have {AppInfo.Version}. {AppInfo.Name} restarts on the new version when it's done.", "Update",
@@ -92,7 +86,6 @@ static partial class SelfTest
             OpenAtLogin.Set(false);
             Add("Open at Login turns off", !OpenAtLogin.IsOn);
 
-            await Temperatures(app, folder, Add, facts);
             await Snapping(app, folder, Add, facts);
             await NoMenus(folder, Add, facts);
             await Snipping(app, folder, Add, facts);

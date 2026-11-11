@@ -16,16 +16,16 @@ public sealed class SettingsTests : IDisposable
         var settings = new Settings(SettingsPath);
         settings.Set("snapWindows", true);
         settings.Set("width", 403.5);
-        settings.Set("temperatureLeftOut", "Graphics:Stopped");
+        settings.Set("someSetting", "first");
         var again = new Settings(SettingsPath);
         Assert.True(again.GetBool("snapWindows"));
         Assert.Equal(403.5, again.GetDouble("width"));
-        Assert.Equal("Graphics:Stopped", again.GetString("temperatureLeftOut"));
+        Assert.Equal("first", again.GetString("someSetting"));
         Assert.Null(again.GetString("snapWindows"));
         Assert.Null(again.GetBool("missing"));
 
-        again.Remove("temperatureLeftOut");
-        Assert.False(new Settings(SettingsPath).Contains("temperatureLeftOut"));
+        again.Remove("someSetting");
+        Assert.False(new Settings(SettingsPath).Contains("someSetting"));
         Assert.True(new Settings(SettingsPath).Contains("snapWindows"));
     }
 
@@ -38,7 +38,7 @@ public sealed class SettingsTests : IDisposable
         Assert.Empty(folder.GetFiles());
     }
 
-    /// <summary>The troubleshooting guide has one delete the temperatureLeftOut line in Notepad. When it's the last
+    /// <summary>The troubleshooting guide has one delete a line in Notepad. When it's the last
     /// line, that leaves a comma at the end of the one before.</summary>
     [Fact]
     public void ALineDeletedByHandLeavesTheRestAsItWas()
@@ -46,14 +46,14 @@ public sealed class SettingsTests : IDisposable
         var settings = new Settings(SettingsPath);
         settings.Set("snapWindows", true);
         settings.Set("snipScreen", false);
-        settings.Set("temperatureLeftOut", "Graphics:Stopped,Drive:TooSlow");
+        settings.Set("someSetting", "two,values");
         var lines = File.ReadAllLines(SettingsPath).ToList();
-        Assert.Equal(1, lines.RemoveAll(line => line.TrimStart().StartsWith("\"temperatureLeftOut\"")));
+        Assert.Equal(1, lines.RemoveAll(line => line.TrimStart().StartsWith("\"someSetting\"")));
         Assert.EndsWith(",", lines[^2]);
         File.WriteAllLines(SettingsPath, lines);
 
         var edited = new Settings(SettingsPath);
-        Assert.Null(edited.GetString("temperatureLeftOut"));
+        Assert.Null(edited.GetString("someSetting"));
         Assert.True(edited.GetBool("snapWindows"));
         Assert.False(edited.GetBool("snipScreen"));
     }
@@ -65,13 +65,13 @@ public sealed class SettingsTests : IDisposable
     {
         var settings = new Settings(SettingsPath);
         settings.Set("snapWindows", true);
-        File.WriteAllText(SettingsPath + ".new", "{ \"snapWindows\": true, \"temperatureLeftOut\": \"Zones:Stopped\" }");
+        File.WriteAllText(SettingsPath + ".new", "{ \"snapWindows\": true, \"someSetting\": \"first\" }");
         var again = new Settings(SettingsPath);
-        Assert.Equal("Zones:Stopped", again.GetString("temperatureLeftOut"));
+        Assert.Equal("first", again.GetString("someSetting"));
         Assert.True(again.GetBool("snapWindows"));
         // And it's in the settings file itself by now, where the troubleshooting guide has one look
         Assert.False(File.Exists(SettingsPath + ".new"));
-        Assert.Contains("Zones:Stopped", File.ReadAllText(SettingsPath));
+        Assert.Contains("first", File.ReadAllText(SettingsPath));
     }
 
     /// <summary>A file of the right size full of nothing is what Windows can leave of one whose contents hadn't
@@ -97,11 +97,11 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void AnOlderUnfinishedSaveDoesntUndoWhatWasChangedSince()
     {
-        File.WriteAllText(SettingsPath + ".new", "{ \"temperatureLeftOut\": \"Zones:Stopped\" }");
+        File.WriteAllText(SettingsPath + ".new", "{ \"someSetting\": \"first\" }");
         File.SetLastWriteTimeUtc(SettingsPath + ".new", DateTime.UtcNow.AddMinutes(-5));
         File.WriteAllText(SettingsPath, "{ \"snapWindows\": true }");
         var settings = new Settings(SettingsPath);
-        Assert.Null(settings.GetString("temperatureLeftOut"));
+        Assert.Null(settings.GetString("someSetting"));
         Assert.True(settings.GetBool("snapWindows"));
     }
 
@@ -109,18 +109,18 @@ public sealed class SettingsTests : IDisposable
     public void SavingSaysWhetherItWorked()
     {
         var settings = new Settings(SettingsPath);
-        Assert.True(settings.Set("temperatureLeftOut", "Zones:Stopped"));
+        Assert.True(settings.Set("someSetting", "first"));
         // Something in the settings' place
         File.Delete(SettingsPath);
         Directory.CreateDirectory(SettingsPath);
-        Assert.False(settings.Set("temperatureLeftOut", "Zones:Stuck"));
-        Assert.Equal("Zones:Stuck", settings.GetString("temperatureLeftOut"));
+        Assert.False(settings.Set("someSetting", "second"));
+        Assert.Equal("second", settings.GetString("someSetting"));
         // The same again isn't taken for saved
-        Assert.False(settings.Set("temperatureLeftOut", "Zones:Stuck"));
+        Assert.False(settings.Set("someSetting", "second"));
         Directory.Delete(SettingsPath);
-        Assert.True(settings.Set("temperatureLeftOut", "Zones:Stuck"));
-        Assert.Equal("Zones:Stuck", new Settings(SettingsPath).GetString("temperatureLeftOut"));
-        Assert.True(new Settings().Set("temperatureLeftOut", "Zones:Stuck"));
+        Assert.True(settings.Set("someSetting", "second"));
+        Assert.Equal("second", new Settings(SettingsPath).GetString("someSetting"));
+        Assert.True(new Settings().Set("someSetting", "second"));
     }
 
     /// <summary>A slider being dragged sets the same value over and over, and every save waits for the disk</summary>
