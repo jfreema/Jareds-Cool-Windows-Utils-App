@@ -69,6 +69,29 @@ public class TemperatureChoiceTests
             "The graphics card, NVIDIA GeForce RTX 3070, as Task Manager shows it"), report.Other);
     }
 
+    /// <summary>Jared's OptiPlex 5070: one zone, TZ00, at the fixed 27.85°C of Intel's reference firmware. Shown, it
+    /// said 82°F Inside Your PC, a number that never moves (November 10, 2026).</summary>
+    [Theory]
+    [InlineData(27.85)]
+    [InlineData(26.85)]
+    public void AFixedNumberFromTheFirmwareIsntShown(double celsius)
+    {
+        var report = TemperatureChoice.Choose([new(@"\_TZ.TZ00", celsius, 100)], NoCards);
+        Assert.Equal(new TemperatureRow(HeatPart.Processor, null), report.Processor);
+        Assert.Equal(new TemperatureRow(HeatPart.Motherboard, null), report.Other);
+        Assert.True(TemperatureChoice.IsPlaceholder(new(@"\_TZ.TZ00", celsius)));
+    }
+
+    [Fact]
+    public void ANumberNearItOrASensorNamedForWhatItMeasuresIsShown()
+    {
+        Assert.False(TemperatureChoice.IsPlaceholder(new(@"\_TZ.TZ00", 27.9)));
+        Assert.False(TemperatureChoice.IsPlaceholder(new(@"\_TZ.PCHZ", 27.85)));
+        Assert.Equal(new TemperatureRow(HeatPart.Inside, 27.9, "A sensor inside your PC, TZ00"),
+            TemperatureChoice.Choose([new(@"\_TZ.TZ00", 27.9)], NoCards).Other);
+        Assert.Equal(HeatPart.Motherboard, TemperatureChoice.Choose([new(@"\_TZ.PCHZ", 27.85)], NoCards).Other.Part);
+    }
+
     [Fact]
     public void TheMotherboardComesBeforeTheGraphicsCard()
     {

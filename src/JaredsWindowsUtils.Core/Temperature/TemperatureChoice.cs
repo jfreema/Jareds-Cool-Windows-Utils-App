@@ -30,6 +30,16 @@ public static class TemperatureChoice
     /// number some desktops' firmware gives (27.85°C), than the processor</summary>
     public const double ProcessorAtLeast = 30;
 
+    /// <summary>What Intel's reference firmware returns for a thermal zone with no sensor behind it: 3010 and 3000
+    /// tenths of a kelvin. Many desktops carry that firmware, Dell's OptiPlexes among them: Jared's OptiPlex 5070
+    /// showed 82°F Inside Your PC, a number that never moves (November 10, 2026). He chose to have it say Can't read
+    /// it rather than show a temperature that isn't one.</summary>
+    public static readonly IReadOnlyList<double> Placeholders = [27.85, 26.85];
+
+    /// <summary>A zone that doesn't say what it's of, giving one of the firmware's fixed numbers</summary>
+    public static bool IsPlaceholder(ThermalZone zone) =>
+        Kind(zone.Name) == ZoneKind.Unknown && Placeholders.Any(number => Math.Abs(zone.Celsius - number) < 0.01);
+
     /// <summary>The zone's own name, the part after \_TZ.</summary>
     public static string ShortName(string name)
     {
@@ -59,7 +69,7 @@ public static class TemperatureChoice
         IReadOnlyList<LeftOut>? leftOut = null)
     {
         var (processor, preferred, hottest) = Pick(zones, graphics);
-        // Last, a zone cooler than a processor: likely the air inside
+        // Last, a zone cooler than a processor: likely the air inside. A fixed number from the firmware isn't shown.
         var other = preferred
             ?? (hottest(_ => true) is { } any
                 ? new TemperatureRow(HeatPart.Inside, any.Celsius, $"A sensor inside your PC, {ShortName(any.Name)}")
@@ -80,7 +90,8 @@ public static class TemperatureChoice
     static (TemperatureRow Processor, TemperatureRow? Preferred, Func<Func<ThermalZone, bool>, ThermalZone?> Hottest) Pick(
         IReadOnlyList<ThermalZone> zones, IReadOnlyList<GraphicsTemperature> graphics)
     {
-        var shown = zones.Where(zone => IsPlausible(zone.Celsius) && Kind(zone.Name) != ZoneKind.Battery).ToList();
+        var shown = zones.Where(zone => IsPlausible(zone.Celsius) && Kind(zone.Name) != ZoneKind.Battery
+            && !IsPlaceholder(zone)).ToList();
         var used = new HashSet<ThermalZone>();
         ThermalZone? Hottest(Func<ThermalZone, bool> which)
         {

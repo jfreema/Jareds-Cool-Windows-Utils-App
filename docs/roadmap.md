@@ -91,7 +91,10 @@ doesn't share one says so.
       the code that asked a drive is gone for good. Settings and the log are written through to the disk, so a PC that
       stops leaves a record, and what the app leaves alone is remembered even if it stops twice. The self-test asks
       real hardware only on GitHub's machines.
-- [ ] Tried on Jared's Windows PC: open the 0.4.1 or later menu once and see what the thermal zones say
+- [x] Tried on Jared's Windows PC (0.4.2, November 11, 2026): no freeze; Processor Can't read it, and the firmware's
+      fixed 82°F as Inside Your PC
+- [x] 0.4.3: a fixed number from the firmware (27.85°C or 26.85°C, from a zone that doesn't say what it's of) says
+      Can't read it, as Jared chose
 - [ ] Graphics cards back, only on a PC that isn't Jared's, and with his say-so
 
 ## 0.5.0: Stay awake with the lid closed

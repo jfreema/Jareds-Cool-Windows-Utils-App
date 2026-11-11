@@ -80,9 +80,11 @@ open the folder. The log says what the app did and why something didn't work.
 - **It showed the graphics card or the drive before.** Version 0.4.0 did. A PC froze as the app started and asked the
   drive how hot it is, through Intel's RST storage driver. The app never asks a drive now, and leaves the graphics card
   alone too.
-- **A temperature never changes,** like 82°F. Some PCs' firmware gives a fixed number instead of a sensor's; Dell
-  OptiPlex desktops give 82°F. The app doesn't take a sensor that's below 86°F for the processor unless it's named for
-  it, but shows it as **Inside Your PC** when there's nothing else.
+- **Both rows say Can't read it, though another app shows 82°F.** Many desktops' firmware, Dell OptiPlexes among them,
+  gives Windows a fixed 82°F (27.85°C) for a sensor that isn't there. It never changes, so the app doesn't show it.
+- **A temperature never changes.** Some firmware gives a fixed number other than 82°F. The app doesn't take a sensor
+  that's below 86°F for the processor unless it's named for it, but shows it as **Inside Your PC** when there's
+  nothing else.
 - **The pill is hotter than the number beside it.** Windows is slowing your PC down to cool it off, and resting the
   pointer on it says so. Give it air, and quit what's working it hard.
 - **Another app shows a different temperature.** Apps read different sensors. Apps like HWiNFO read the processor's own
