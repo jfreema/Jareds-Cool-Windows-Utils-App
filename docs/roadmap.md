@@ -1,15 +1,14 @@
 # Roadmap
 
 The Windows app gets the Mac app's features one at a time, a release each, so each can be tried on a real Windows PC
-before the next one starts. This is Jared's plan from November 2, 2026, with GIFs and a temperature readout moved up
-on November 9. Tick items off here as they ship.
+before the next one starts. This is Jared's plan from November 2, 2026, with GIFs moved up on November 9. Tick items off here as they ship.
 
 | Release | Feature | Status |
 |---|---|---|
 | 0.1.0 | [Window snapping](#010-window-snapping), with the tray icon, the menu, Open at Login, About and Check for Updates | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.1.0) November 2, 2026 |
 | 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.2.0) November 2, 2026 |
 | 0.3.0 | [Record GIFs](#030-record-gifs) with the screenshot tool | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.3.0) November 9, 2026 |
-| 0.4.0 | [Temperature](#040-temperature) | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.4.0) November 10, 2026 |
+| 0.4.0 | [Temperature](#040-temperature) | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.4.0) November 10, 2026, and removed in 0.4.4 on November 11 |
 | 0.5.0 | [Stay awake with the lid closed](#050-stay-awake-with-the-lid-closed) | Not started |
 | 0.6.0 | [Keyboard cleaning](#060-keyboard-cleaning) | Not started |
 | 0.7.0 | [Guitar tuner](#070-guitar-tuner) | Not started |
@@ -19,7 +18,7 @@ on November 9. Tick items off here as they ship.
 pointer on it), Show Hidden Icons (the **^** in the taskbar's corner) and the Mac's lock shortcut (Windows key+L).
 
 Each phase ends with a release that Jared installs and tries. He asked on November 2, 2026 for 0.2.0 to follow 0.1.0
-straight away, without waiting for his tryout, and on November 9 for GIF recording and a temperature readout next.
+straight away, without waiting for his tryout, and on November 9 for GIF recording next.
 Within a phase, fixes go out as 0.x.1, 0.x.2 and so on (see [AGENTS.md](../AGENTS.md#versioning)).
 
 ## 0.1.0: Window snapping
@@ -95,7 +94,9 @@ doesn't share one says so.
       fixed 82°F as Inside Your PC
 - [x] 0.4.3: a fixed number from the firmware (27.85°C or 26.85°C, from a zone that doesn't say what it's of) says
       Can't read it, as Jared chose
-- [ ] Graphics cards back, only on a PC that isn't Jared's, and with his say-so
+- [x] 0.4.4: removed, at Jared's request on November 11, 2026. Reading the processor's temperature on his Dell needs a
+      kernel driver, and 0.4.0 froze his PC. The Settings and log fixes stay. See
+      [AGENTS.md](../AGENTS.md#things-that-bite) before ever asking hardware for a temperature again.
 
 ## 0.5.0: Stay awake with the lid closed
 

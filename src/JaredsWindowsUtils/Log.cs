@@ -4,7 +4,7 @@ using System.Text;
 namespace JaredsWindowsUtils;
 
 /// <summary>A plain log in the app's folder, log.txt, with the one before in log.old.txt. Categories as on the Mac:
-/// app, snap, update, and snip and temp.
+/// app, snap, update, and snip.
 ///
 /// <para>Each line is on the disk before the app goes on. The log is what there is to go by after a PC has stopped,
 /// and lines that Windows was still holding when the power is cut come back as nothing: the three lines 0.4.0 wrote

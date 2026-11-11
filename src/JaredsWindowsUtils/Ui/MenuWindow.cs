@@ -4,7 +4,6 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using JaredsWindowsUtils.Core.Temperature;
 using static JaredsWindowsUtils.Interop.Native;
 
 namespace JaredsWindowsUtils.Ui;
@@ -19,9 +18,8 @@ enum MenuCommand { ShowAbout, CheckForUpdates, Quit }
 /// <param name="SnapNote">Why the shortcuts didn't take, under the switch</param>
 /// <param name="SnipNote">Why Win+Alt+P didn't take, under its switch</param>
 /// <param name="RecordGifs">Win+Alt+G, an option of snipping</param>
-/// <param name="Temperatures">Null until they've been read</param>
 sealed record MenuState(bool OpenAtLogin, bool SnapWindows, bool SnapThirds, string? SnapNote, bool SnipScreen,
-    string? SnipNote, bool RecordGifs, bool IsCheckingForUpdates, TemperatureReport? Temperatures = null);
+    string? SnipNote, bool RecordGifs, bool IsCheckingForUpdates);
 
 /// <summary>The tray icon's menu, drawn in the bubble pop style like the Mac app's. It behaves like a menu: it opens
 /// beside the icon, and closes on a click elsewhere, Esc, or a second click on the icon. Switches stay put when flipped,
@@ -50,8 +48,6 @@ sealed class MenuWindow : Window
     };
     readonly Strip snipNote;
     readonly TextBlock snipNoteText;
-    readonly TemperatureRowView processorTemperature = new("Processor", showsDivider: false);
-    readonly TemperatureRowView otherTemperature = new("Motherboard", showsDivider: true);
     readonly BubbleButton checkForUpdates = new("Check for Updates");
     RECT anchor;
     bool closing;
@@ -86,7 +82,6 @@ sealed class MenuWindow : Window
         content.Children.Add(Header());
         content.Children.Add(Section("Window Snapping", Card(snapWindows, SnapOptions(), snapNote)));
         content.Children.Add(Section("Screenshots", Card(snipScreen, Options(recordGifs), snipNote), spaceAbove: true));
-        content.Children.Add(Section("Temperature", Card(processorTemperature, otherTemperature), spaceAbove: true));
         content.Children.Add(Footer());
 
         Content = new MenuSurface
@@ -158,12 +153,7 @@ sealed class MenuWindow : Window
         snipNote.Visibility = state.SnipNote == null ? Visibility.Collapsed : Visibility.Visible;
         checkForUpdates.Text = state.IsCheckingForUpdates ? "Checking…" : "Check for Updates";
         checkForUpdates.IsEnabled = !state.IsCheckingForUpdates;
-        processorTemperature.Row = state.Temperatures?.Processor;
-        otherTemperature.Row = state.Temperatures?.Other;
     }
-
-    /// <summary>For the self-test</summary>
-    internal IReadOnlyList<TemperatureRowView> TemperatureRows => [processorTemperature, otherTemperature];
 
     /// <summary>Opens beside the tray icon, or failing that where the pointer is</summary>
     public void Open(RECT? icon)

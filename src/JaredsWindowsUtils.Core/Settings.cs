@@ -122,8 +122,7 @@ public sealed class Settings
     /// <summary>To a new file, and onto the disk, then over the old one. A crash mid-write can't leave half a file,
     /// and a PC that stops just after can't leave an empty one: Windows records the new file's name and size before
     /// it has written what's in it, so without the wait for the disk, what comes back after the power is cut can be
-    /// a file of the right size full of nothing. The list of what the app no longer asks for a temperature is kept
-    /// here (<see cref="Temperature.SourceGuard"/>), and it's written just after a PC has stopped.</summary>
+    /// a file of the right size full of nothing.</summary>
     bool Save()
     {
         if (path == null) return true;
