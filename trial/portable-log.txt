@@ -1,0 +1,10 @@
+2026-11-11 05:55:57.416 [snap] Window snapping: On
+2026-11-11 05:55:57.750 [snip] Screen snipping: On
+2026-11-11 05:55:58.216 [app] Started 0.4.0 from C:\Users\runneradmin\AppData\Local\Temp\jaredswindowsutils-portable\JaredsWindowsUtils.exe
+2026-11-11 05:56:08.937 [update] Updated to 99.0.0 at C:\Users\runneradmin\AppData\Local\Temp\jaredswindowsutils-portable\JaredsWindowsUtils.exe, restarting
+2026-11-11 05:56:08.980 [app] Quit
+2026-11-11 05:56:09.405 [snap] Window snapping: On
+2026-11-11 05:56:09.604 [snip] Screen snipping: On
+2026-11-11 05:56:10.048 [app] Started 99.0.0 from C:\Users\runneradmin\AppData\Local\Temp\jaredswindowsutils-portable\JaredsWindowsUtils.exe after an update
+2026-11-11 05:56:10.056 [update] Removed C:\Users\runneradmin\AppData\Local\Temp\jaredswindowsutils-portable\JaredsWindowsUtils.exe.old
+2026-11-11 05:56:10.440 [app] Quit

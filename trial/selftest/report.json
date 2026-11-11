@@ -1,0 +1,437 @@
+{
+  "passed": true,
+  "facts": {
+    "version": "0.4.0",
+    "windows": "Microsoft Windows NT 10.0.26100.0",
+    "executable": "D:\\a\\Jareds-Cool-Windows-Utils-App\\Jareds-Cool-Windows-Utils-App\\out\\JaredsWindowsUtils.exe",
+    "monitors": "\\\\.\\DISPLAY1 (0, 0, 1024 \u00D7 768) visible (0, 0, 1024 \u00D7 720) primary",
+    "dpi": "96",
+    "Win\u002BAlt\u002BLeft free to register": "no (1409)",
+    "Win\u002BAlt\u002BUp free to register": "no (1409)",
+    "snap area": "(0, 0, 1024 \u00D7 720)",
+    "test window in front": "True",
+    "Notepad in front": "True",
+    "Notepad\u0027s menu bar open to start with": "False",
+    "Alt on its own opens Notepad\u0027s menu bar": "True",
+    "text recognition": "en-US",
+    "text recognition languages": "en-US",
+    "screenshots folder": "none",
+    "snip test window in front": "True",
+    "screen picker in front": "True (HwndWrapper[JaredsWindowsUtils;;822a25e3-f61a-44e8-967d-bd577cdff353] \u0022Snip\u0022)",
+    "menu after a snip in front": "True",
+    "editor in front": "True",
+    "editor": "at (128, 101, 792 \u00D7 599), snip 586 \u00D7 403 at 1\u00D7",
+    "editor in front for its keys": "True",
+    "in front after Esc": "HwndWrapper[JaredsWindowsUtils;;e22a1610-91f9-4bcb-95d6-6837f7e1188e] \u0022Snap Test Window\u0022",
+    "Stop\u0027s display affinity": "0x11",
+    "recording": "97 frames, 6.55 seconds, 42081 bytes, 626 \u00D7 473",
+    "recording most of the screen": "31 frames, 2.15 seconds, 89975 bytes, 1015 \u00D7 711"
+  },
+  "results": [
+    {
+      "Name": "tray icon shown",
+      "Passed": true,
+      "Details": "at (790, 720, 32 \u00D7 48)"
+    },
+    {
+      "Name": "watching for shortcuts",
+      "Passed": true,
+      "Details": "On"
+    },
+    {
+      "Name": "menu opens in the screen",
+      "Passed": true,
+      "Details": "at (605, 402, 403 \u00D7 310)"
+    },
+    {
+      "Name": "menu closes",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Open at Login turns on",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Open at Login turns off",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "test windows open",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "left half",
+      "Passed": true,
+      "Details": "expected (0, 0, 512 \u00D7 720), got (0, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "right half",
+      "Passed": true,
+      "Details": "expected (512, 0, 512 \u00D7 720), got (512, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "right at the last display\u0027s edge stays",
+      "Passed": true,
+      "Details": "expected nothing, got (512, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "up fills the display",
+      "Passed": true,
+      "Details": "expected (0, 0, 1024 \u00D7 720), got (0, 0, 1024 \u00D7 720)"
+    },
+    {
+      "Name": "up again stays",
+      "Passed": true,
+      "Details": "expected nothing, got (0, 0, 1024 \u00D7 720)"
+    },
+    {
+      "Name": "down: top left quarter",
+      "Passed": true,
+      "Details": "expected (0, 0, 512 \u00D7 360), got (0, 0, 512 \u00D7 360)"
+    },
+    {
+      "Name": "down: top right quarter",
+      "Passed": true,
+      "Details": "expected (512, 0, 512 \u00D7 360), got (512, 0, 512 \u00D7 360)"
+    },
+    {
+      "Name": "down: bottom right quarter",
+      "Passed": true,
+      "Details": "expected (512, 360, 512 \u00D7 360), got (512, 360, 512 \u00D7 360)"
+    },
+    {
+      "Name": "down: bottom left quarter",
+      "Passed": true,
+      "Details": "expected (0, 360, 512 \u00D7 360), got (0, 360, 512 \u00D7 360)"
+    },
+    {
+      "Name": "down: back to top left",
+      "Passed": true,
+      "Details": "expected (0, 0, 512 \u00D7 360), got (0, 0, 512 \u00D7 360)"
+    },
+    {
+      "Name": "thirds: left third",
+      "Passed": true,
+      "Details": "expected (0, 0, 341 \u00D7 720), got (0, 0, 341 \u00D7 720)"
+    },
+    {
+      "Name": "thirds: middle third",
+      "Passed": true,
+      "Details": "expected (341, 0, 341 \u00D7 720), got (341, 0, 341 \u00D7 720)"
+    },
+    {
+      "Name": "thirds: right third",
+      "Passed": true,
+      "Details": "expected (682, 0, 342 \u00D7 720), got (682, 0, 342 \u00D7 720)"
+    },
+    {
+      "Name": "thirds: up to the right two thirds",
+      "Passed": true,
+      "Details": "expected (341, 0, 683 \u00D7 720), got (341, 0, 683 \u00D7 720)"
+    },
+    {
+      "Name": "thirds: up again fills the display",
+      "Passed": true,
+      "Details": "expected (0, 0, 1024 \u00D7 720), got (0, 0, 1024 \u00D7 720)"
+    },
+    {
+      "Name": "maximized: left half",
+      "Passed": true,
+      "Details": "expected (0, 0, 512 \u00D7 720), got (0, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "maximized: no longer maximized",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "fixed size: centered in the left half",
+      "Passed": true,
+      "Details": "expected (53, 213.5, 406 \u00D7 293), got (53, 214, 406 \u00D7 293)"
+    },
+    {
+      "Name": "back to the left half",
+      "Passed": true,
+      "Details": "expected (0, 0, 512 \u00D7 720), got (0, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "Win\u002BAlt\u002BRight snaps the window in front",
+      "Passed": true,
+      "Details": "expected (512, 0, 512 \u00D7 720), got (512, 0, 512 \u00D7 720)"
+    },
+    {
+      "Name": "Win\u002BAlt\u002BUp fills the display, not Windows\u0027 top half",
+      "Passed": true,
+      "Details": "expected (0, 0, 1024 \u00D7 720), got (0, 0, 1024 \u00D7 720)"
+    },
+    {
+      "Name": "Start stays closed",
+      "Passed": true,
+      "Details": "in front: HwndWrapper[JaredsWindowsUtils;;87ce584f-7a87-48a2-94f2-e595563d5e9e] \u0022Snap Test Window\u0022"
+    },
+    {
+      "Name": "Win\u002BAlt\u002BLeft leaves Notepad\u0027s menu bar closed",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Win\u002BAlt\u002BLeft leaves Start closed",
+      "Passed": true,
+      "Details": "in front: Notepad \u0022Untitled - Notepad\u0022"
+    },
+    {
+      "Name": "watching for Win\u002BAlt\u002BP",
+      "Passed": true,
+      "Details": "On"
+    },
+    {
+      "Name": "snip test window opens",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Win\u002BAlt\u002BP opens the screen picker",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "a drag snips that part of the screen",
+      "Passed": true,
+      "Details": "dragged PointD { X = 167, Y = 160 } to PointD { X = 467, Y = 360 }, expected (167, 160, 300 \u00D7 200), got 300 \u00D7 200"
+    },
+    {
+      "Name": "the snip is the window under the drag",
+      "Passed": true,
+      "Details": "pixel (235, 242, 255)"
+    },
+    {
+      "Name": "Copy to Clipboard copies the snip as a PNG",
+      "Passed": true,
+      "Details": "300 \u00D7 200 at 96 dpi"
+    },
+    {
+      "Name": "and as a bitmap, for apps like Paint",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "the window you were in gets the focus back",
+      "Passed": true,
+      "Details": "in front: HwndWrapper[JaredsWindowsUtils;;e22a1610-91f9-4bcb-95d6-6837f7e1188e] \u0022Snap Test Window\u0022"
+    },
+    {
+      "Name": "Space switches to snipping a window",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "a click snips the window under it",
+      "Passed": true,
+      "Details": "expected (127, 90, 626 \u00D7 473), got 626 \u00D7 473"
+    },
+    {
+      "Name": "Copy Text copies the words in the window",
+      "Passed": true,
+      "Details": "\u0022o x\nSnap Test Window\nSnap me\u0022"
+    },
+    {
+      "Name": "a note says the text was copied",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Open in Editor opens the editor",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "five shapes drawn",
+      "Passed": true,
+      "Details": "5"
+    },
+    {
+      "Name": "the marked-up snip is the snip\u0027s size",
+      "Passed": true,
+      "Details": "586 \u00D7 403"
+    },
+    {
+      "Name": "the box is drawn in red",
+      "Passed": true,
+      "Details": "pixel (255, 59, 48)"
+    },
+    {
+      "Name": "the blur blurs the words under it",
+      "Passed": true,
+      "Details": "17.5 levels apart on average"
+    },
+    {
+      "Name": "a saved snip is a PNG at the display\u0027s dpi",
+      "Passed": true,
+      "Details": "586 \u00D7 403 at 96 dpi"
+    },
+    {
+      "Name": "A picks the arrow",
+      "Passed": true,
+      "Details": "Arrow"
+    },
+    {
+      "Name": "Ctrl\u002BZ takes the last shape away",
+      "Passed": true,
+      "Details": "5 to 4"
+    },
+    {
+      "Name": "Ctrl\u002BY puts it back",
+      "Passed": true,
+      "Details": "5"
+    },
+    {
+      "Name": "Ctrl\u002BC copies the marked-up snip",
+      "Passed": true,
+      "Details": "586 \u00D7 403"
+    },
+    {
+      "Name": "copying takes the unsaved mark off the title",
+      "Passed": true,
+      "Details": "Snip 2026-11-11 at 05.55.09"
+    },
+    {
+      "Name": "a new shape puts the unsaved mark on the title",
+      "Passed": true,
+      "Details": "*Snip 2026-11-11 at 05.55.09"
+    },
+    {
+      "Name": "closing with shapes that weren\u0027t saved asks first",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Don\u0027t Save closes the editor",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Esc cancels the snip",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "watching for Win\u002BAlt\u002BG",
+      "Passed": true,
+      "Details": "On, records GIFs: True"
+    },
+    {
+      "Name": "record test window opens",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "Win\u002BAlt\u002BG opens the screen picker",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "the window under the pointer lights up",
+      "Passed": true,
+      "Details": "lit (127, 90, 626 \u00D7 473), window (127, 90, 626 \u00D7 473)"
+    },
+    {
+      "Name": "a click starts recording the window",
+      "Passed": true,
+      "Details": "Recording"
+    },
+    {
+      "Name": "the window you were in keeps the focus",
+      "Passed": true,
+      "Details": "in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] \u0022Record Test Window\u0022"
+    },
+    {
+      "Name": "Stop sits under the window",
+      "Passed": true,
+      "Details": "bar at (372, 573, 136 \u00D7 45)"
+    },
+    {
+      "Name": "Stop stays out of pictures of the screen",
+      "Passed": true,
+      "Details": "pixel (12, 12, 12) at PointD { X = 469, Y = 593 }"
+    },
+    {
+      "Name": "Win\u002BAlt\u002BG again stops and offers the GIF",
+      "Passed": true,
+      "Details": "7 seconds \u00B7 42 KB"
+    },
+    {
+      "Name": "the GIF is the window\u0027s size, a pixel a point",
+      "Passed": true,
+      "Details": "626 \u00D7 473, window (127, 90, 626 \u00D7 473)"
+    },
+    {
+      "Name": "the GIF has the square moving across",
+      "Passed": true,
+      "Details": "97 frames"
+    },
+    {
+      "Name": "Windows reads the GIF",
+      "Passed": true,
+      "Details": "97 frames read, 97 written"
+    },
+    {
+      "Name": "the GIF shows the window",
+      "Passed": true,
+      "Details": "pixel (235, 242, 255)"
+    },
+    {
+      "Name": "Copy to Clipboard copies the GIF as a file",
+      "Passed": true,
+      "Details": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\JaredsWindowsUtils\\Recordings\\Recording 2026-11-11 at 05.55.23.gif"
+    },
+    {
+      "Name": "and says so",
+      "Passed": true,
+      "Details": ""
+    },
+    {
+      "Name": "the window you were in gets the focus back",
+      "Passed": true,
+      "Details": "in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] \u0022Record Test Window\u0022"
+    },
+    {
+      "Name": "a drag starts recording that part of the screen",
+      "Passed": true,
+      "Details": "dragged PointD { X = 4, Y = 4 } to PointD { X = 1019, Y = 715 }"
+    },
+    {
+      "Name": "Stop goes inside what\u0027s recording when there\u0027s no room around it",
+      "Passed": true,
+      "Details": "bar at (448, 660, 128 \u00D7 45)"
+    },
+    {
+      "Name": "clicking Stop stops and offers the GIF",
+      "Passed": true,
+      "Details": "Busy"
+    },
+    {
+      "Name": "Stop stays out of the GIF",
+      "Passed": true,
+      "Details": "0 of 31 frames show it, looked in 440,652,136,53"
+    },
+    {
+      "Name": "Esc throws the recording away",
+      "Passed": true,
+      "Details": "Idle"
+    },
+    {
+      "Name": "Win\u002BAlt\u002BG again cancels picking",
+      "Passed": true,
+      "Details": "Idle"
+    },
+    {
+      "Name": "and the window you were in gets the focus back",
+      "Passed": true,
+      "Details": "in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] \u0022Record Test Window\u0022"
+    }
+  ]
+}

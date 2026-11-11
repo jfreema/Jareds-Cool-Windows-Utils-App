@@ -1,0 +1,112 @@
+2026-11-11 05:54:43.943 [snap] Window snapping: On
+2026-11-11 05:54:43.966 [snip] Screen snipping: On
+2026-11-11 05:54:44.107 [app] Started 0.4.0 from D:\a\Jareds-Cool-Windows-Utils-App\Jareds-Cool-Windows-Utils-App\out\JaredsWindowsUtils.exe
+2026-11-11 05:54:45.132 [app] Self-test: passed tray icon shown at (790, 720, 32 × 48)
+2026-11-11 05:54:45.144 [app] Self-test: passed watching for shortcuts On
+2026-11-11 05:54:46.747 [app] Self-test: passed menu opens in the screen at (605, 402, 403 × 310)
+2026-11-11 05:54:47.111 [app] Self-test: passed menu closes 
+2026-11-11 05:54:48.670 [app] Open at Login on
+2026-11-11 05:54:48.681 [app] Self-test: passed Open at Login turns on 
+2026-11-11 05:54:48.692 [app] Open at Login off
+2026-11-11 05:54:48.702 [app] Self-test: passed Open at Login turns off 
+2026-11-11 05:54:49.227 [app] Self-test: passed test windows open 
+2026-11-11 05:54:49.456 [app] Self-test: passed left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-11 05:54:49.667 [app] Self-test: passed right half expected (512, 0, 512 × 720), got (512, 0, 512 × 720)
+2026-11-11 05:54:49.879 [app] Self-test: passed right at the last display's edge stays expected nothing, got (512, 0, 512 × 720)
+2026-11-11 05:54:50.095 [app] Self-test: passed up fills the display expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-11 05:54:50.316 [app] Self-test: passed up again stays expected nothing, got (0, 0, 1024 × 720)
+2026-11-11 05:54:50.528 [app] Self-test: passed down: top left quarter expected (0, 0, 512 × 360), got (0, 0, 512 × 360)
+2026-11-11 05:54:50.738 [app] Self-test: passed down: top right quarter expected (512, 0, 512 × 360), got (512, 0, 512 × 360)
+2026-11-11 05:54:50.956 [app] Self-test: passed down: bottom right quarter expected (512, 360, 512 × 360), got (512, 360, 512 × 360)
+2026-11-11 05:54:51.166 [app] Self-test: passed down: bottom left quarter expected (0, 360, 512 × 360), got (0, 360, 512 × 360)
+2026-11-11 05:54:51.377 [app] Self-test: passed down: back to top left expected (0, 0, 512 × 360), got (0, 0, 512 × 360)
+2026-11-11 05:54:51.595 [app] Self-test: passed thirds: left third expected (0, 0, 341 × 720), got (0, 0, 341 × 720)
+2026-11-11 05:54:51.807 [app] Self-test: passed thirds: middle third expected (341, 0, 341 × 720), got (341, 0, 341 × 720)
+2026-11-11 05:54:52.024 [app] Self-test: passed thirds: right third expected (682, 0, 342 × 720), got (682, 0, 342 × 720)
+2026-11-11 05:54:52.251 [app] Self-test: passed thirds: up to the right two thirds expected (341, 0, 683 × 720), got (341, 0, 683 × 720)
+2026-11-11 05:54:52.463 [app] Self-test: passed thirds: up again fills the display expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-11 05:54:53.284 [app] Self-test: passed maximized: left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-11 05:54:53.293 [app] Self-test: passed maximized: no longer maximized 
+2026-11-11 05:54:53.504 [app] Self-test: passed fixed size: centered in the left half expected (53, 213.5, 406 × 293), got (53, 214, 406 × 293)
+2026-11-11 05:54:53.713 [app] Self-test: passed back to the left half expected (0, 0, 512 × 720), got (0, 0, 512 × 720)
+2026-11-11 05:54:56.017 [app] Self-test: passed Win+Alt+Right snaps the window in front expected (512, 0, 512 × 720), got (512, 0, 512 × 720)
+2026-11-11 05:54:56.025 [app] Self-test: passed Win+Alt+Up fills the display, not Windows' top half expected (0, 0, 1024 × 720), got (0, 0, 1024 × 720)
+2026-11-11 05:54:56.033 [app] Self-test: passed Start stays closed in front: HwndWrapper[JaredsWindowsUtils;;87ce584f-7a87-48a2-94f2-e595563d5e9e] "Snap Test Window"
+2026-11-11 05:54:59.205 [app] Self-test: passed Win+Alt+Left leaves Notepad's menu bar closed 
+2026-11-11 05:54:59.214 [app] Self-test: passed Win+Alt+Left leaves Start closed in front: Notepad "Untitled - Notepad"
+2026-11-11 05:54:59.273 [app] Self-test: passed watching for Win+Alt+P On
+2026-11-11 05:54:59.778 [app] Self-test: passed snip test window opens 
+2026-11-11 05:55:00.450 [snip] Choosing what to snip
+2026-11-11 05:55:01.146 [app] Self-test: passed Win+Alt+P opens the screen picker 
+2026-11-11 05:55:02.110 [snip] Took a snip, 300 × 200 pixels at 1×
+2026-11-11 05:55:02.409 [app] Self-test: passed a drag snips that part of the screen dragged PointD { X = 167, Y = 160 } to PointD { X = 467, Y = 360 }, expected (167, 160, 300 × 200), got 300 × 200
+2026-11-11 05:55:02.418 [app] Self-test: passed the snip is the window under the drag pixel (235, 242, 255)
+2026-11-11 05:55:03.016 [snip] Copied the snip
+2026-11-11 05:55:03.740 [app] Self-test: passed Copy to Clipboard copies the snip as a PNG 300 × 200 at 96 dpi
+2026-11-11 05:55:03.749 [app] Self-test: passed and as a bitmap, for apps like Paint 
+2026-11-11 05:55:03.757 [app] Self-test: passed the window you were in gets the focus back in front: HwndWrapper[JaredsWindowsUtils;;e22a1610-91f9-4bcb-95d6-6837f7e1188e] "Snap Test Window"
+2026-11-11 05:55:04.430 [snip] Choosing what to snip
+2026-11-11 05:55:05.550 [app] Self-test: passed Space switches to snipping a window 
+2026-11-11 05:55:06.134 [snip] Took a snip, 626 × 473 pixels at 1×
+2026-11-11 05:55:06.445 [app] Self-test: passed a click snips the window under it expected (127, 90, 626 × 473), got 626 × 473
+2026-11-11 05:55:06.683 [snip] Copied the snip's text, 3 lines
+2026-11-11 05:55:06.709 [app] Self-test: passed Copy Text copies the words in the window "o x
+Snap Test Window
+Snap me"
+2026-11-11 05:55:06.719 [app] Self-test: passed a note says the text was copied 
+2026-11-11 05:55:09.247 [snip] Choosing what to snip
+2026-11-11 05:55:10.819 [snip] Took a snip, 586 × 403 pixels at 1×
+2026-11-11 05:55:11.172 [snip] Opened a snip in the editor
+2026-11-11 05:55:12.696 [app] Self-test: passed Open in Editor opens the editor 
+2026-11-11 05:55:13.010 [app] Self-test: passed five shapes drawn 5
+2026-11-11 05:55:14.663 [app] Self-test: passed the marked-up snip is the snip's size 586 × 403
+2026-11-11 05:55:14.673 [app] Self-test: passed the box is drawn in red pixel (255, 59, 48)
+2026-11-11 05:55:14.687 [app] Self-test: passed the blur blurs the words under it 17.5 levels apart on average
+2026-11-11 05:55:14.701 [app] Self-test: passed a saved snip is a PNG at the display's dpi 586 × 403 at 96 dpi
+2026-11-11 05:55:15.523 [app] Self-test: passed A picks the arrow Arrow
+2026-11-11 05:55:15.975 [app] Self-test: passed Ctrl+Z takes the last shape away 5 to 4
+2026-11-11 05:55:16.414 [app] Self-test: passed Ctrl+Y puts it back 5
+2026-11-11 05:55:16.440 [snip] Copied the snip from the editor
+2026-11-11 05:55:17.250 [app] Self-test: passed Ctrl+C copies the marked-up snip 586 × 403
+2026-11-11 05:55:17.260 [app] Self-test: passed copying takes the unsaved mark off the title Snip 2026-11-11 at 05.55.09
+2026-11-11 05:55:17.610 [app] Self-test: passed a new shape puts the unsaved mark on the title *Snip 2026-11-11 at 05.55.09
+2026-11-11 05:55:18.619 [app] Self-test: passed closing with shapes that weren't saved asks first 
+2026-11-11 05:55:19.387 [app] Self-test: passed Don't Save closes the editor 
+2026-11-11 05:55:20.065 [snip] Choosing what to snip
+2026-11-11 05:55:20.757 [snip] Snip cancelled
+2026-11-11 05:55:21.358 [app] Self-test: passed Esc cancels the snip 
+2026-11-11 05:55:21.372 [app] Self-test: passed watching for Win+Alt+G On, records GIFs: True
+2026-11-11 05:55:21.815 [app] Self-test: passed record test window opens 
+2026-11-11 05:55:22.495 [snip] Choosing what to record
+2026-11-11 05:55:23.195 [app] Self-test: passed Win+Alt+G opens the screen picker 
+2026-11-11 05:55:23.710 [app] Self-test: passed the window under the pointer lights up lit (127, 90, 626 × 473), window (127, 90, 626 × 473)
+2026-11-11 05:55:24.074 [snip] Recording (127, 90, 626 × 473) as 626 × 473 pixels
+2026-11-11 05:55:24.164 [app] Self-test: passed a click starts recording the window Recording
+2026-11-11 05:55:24.176 [app] Self-test: passed the window you were in keeps the focus in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] "Record Test Window"
+2026-11-11 05:55:24.491 [app] Self-test: passed Stop sits under the window bar at (372, 573, 136 × 45)
+2026-11-11 05:55:28.161 [app] Self-test: passed Stop stays out of pictures of the screen pixel (12, 12, 12) at PointD { X = 469, Y = 593 }
+2026-11-11 05:55:30.618 [snip] Took 98 pictures, 0 left out while the GIF caught up
+2026-11-11 05:55:30.634 [snip] Recorded 97 frames, 6.55 seconds, 42081 bytes
+2026-11-11 05:55:30.742 [app] Self-test: passed Win+Alt+G again stops and offers the GIF 7 seconds · 42 KB
+2026-11-11 05:55:30.749 [app] Self-test: passed the GIF is the window's size, a pixel a point 626 × 473, window (127, 90, 626 × 473)
+2026-11-11 05:55:30.756 [app] Self-test: passed the GIF has the square moving across 97 frames
+2026-11-11 05:55:31.207 [app] Self-test: passed Windows reads the GIF 97 frames read, 97 written
+2026-11-11 05:55:31.214 [app] Self-test: passed the GIF shows the window pixel (235, 242, 255)
+2026-11-11 05:55:31.246 [snip] Copied a recording
+2026-11-11 05:55:31.958 [app] Self-test: passed Copy to Clipboard copies the GIF as a file C:\Users\runneradmin\AppData\Local\Temp\JaredsWindowsUtils\Recordings\Recording 2026-11-11 at 05.55.23.gif
+2026-11-11 05:55:31.965 [app] Self-test: passed and says so 
+2026-11-11 05:55:31.974 [app] Self-test: passed the window you were in gets the focus back in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] "Record Test Window"
+2026-11-11 05:55:32.652 [snip] Choosing what to record
+2026-11-11 05:55:34.435 [snip] Recording (4, 4, 1015 × 711) as 1015 × 711 pixels
+2026-11-11 05:55:34.530 [app] Self-test: passed a drag starts recording that part of the screen dragged PointD { X = 4, Y = 4 } to PointD { X = 1019, Y = 715 }
+2026-11-11 05:55:34.842 [app] Self-test: passed Stop goes inside what's recording when there's no room around it bar at (448, 660, 128 × 45)
+2026-11-11 05:55:36.602 [snip] Took 31 pictures, 0 left out while the GIF caught up
+2026-11-11 05:55:36.609 [snip] Recorded 31 frames, 2.15 seconds, 89975 bytes
+2026-11-11 05:55:36.866 [app] Self-test: passed clicking Stop stops and offers the GIF Busy
+2026-11-11 05:55:36.880 [app] Self-test: passed Stop stays out of the GIF 0 of 31 frames show it, looked in 440,652,136,53
+2026-11-11 05:55:36.896 [snip] Recording thrown away
+2026-11-11 05:55:37.502 [app] Self-test: passed Esc throws the recording away Idle
+2026-11-11 05:55:38.166 [snip] Choosing what to record
+2026-11-11 05:55:39.013 [snip] Recording cancelled
+2026-11-11 05:55:39.743 [app] Self-test: passed Win+Alt+G again cancels picking Idle
+2026-11-11 05:55:39.750 [app] Self-test: passed and the window you were in gets the focus back in front: HwndWrapper[JaredsWindowsUtils;;00165bab-2eef-46e8-b3d6-78615d894a8e] "Record Test Window"
