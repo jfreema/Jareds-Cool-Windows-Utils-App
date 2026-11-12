@@ -90,6 +90,7 @@ static partial class SelfTest
             await NoMenus(folder, Add, facts);
             await Snipping(app, folder, Add, facts);
             await Recording(app, folder, Add, facts);
+            await Cleaning(app, folder, Add, facts);
         }
         catch (Exception exception)
         {

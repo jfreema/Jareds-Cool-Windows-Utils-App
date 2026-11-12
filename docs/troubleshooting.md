@@ -70,6 +70,21 @@ open the folder. The log says what the app did and why something didn't work.
 - **Part of the GIF is black.** Some apps keep their windows out of screenshots and recordings, like streaming video
   with copy protection. Windows' own Snipping Tool sees them the same way.
 
+## Keyboard cleaning
+
+- **The keyboard or touchpad is still working.** Windows may not hand the app the keys of an app run as administrator.
+  The cleaning window takes the focus, so keys land there, but if you click into an elevated app it may get them. A
+  touchscreen isn't turned off, and some touchpads' gestures, like three-finger swipes, can still get through.
+- **It says Windows didn't let the app hold them back.** Security software may be blocking the app from watching the
+  keyboard and mouse, as it can for window snapping. Quit the app, open it again, and try again.
+- **It ended before 5 minutes.** Holding both Shift keys for 1.5 seconds ends it, so a cat on the keyboard might. If the
+  app stopped answering for a few seconds, the keyboard comes back by itself: the log (`clean`) says which.
+- **Caps Lock lights up.** The light can flash for an instant on some keyboards, which switch it before the app can
+  hold the key back. The app switches it straight back.
+- **It never comes back.** This shouldn't happen: they come back by themselves when the time is up, or if the app stops
+  answering. If it does, press Ctrl+Alt+Delete, which Windows always answers, choose **Task Manager** and end **Jared's
+  Cool Windows Utilities App**: the keyboard and touchpad are back as the app ends.
+
 ## Temperature
 
 - **The menu has no Temperature section.** Version 0.4.4 removed it. Version 0.4.0 asked the drive Windows is on how hot

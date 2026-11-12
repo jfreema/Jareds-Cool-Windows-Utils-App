@@ -8,6 +8,7 @@ The Windows version of [Jared's Cool Mac Utilities App](https://github.com/jfree
 app with the same bubble pop menu, getting the Mac app's features one at a time. [docs/roadmap.md](docs/roadmap.md)
 tracks which are done: tick items off there as they ship. 0.1.0 has window snapping, 0.2.0 the screenshot tool, 0.3.0
 GIF recording. 0.4.0 added temperatures, which Jared had removed again on November 11, 2026 (see Things that bite).
+0.5.0 is keyboard cleaning, which Jared asked for on November 12, ahead of the lid, which moved to 0.6.0.
 Jared asked for 0.2.0 to follow 0.1.0 straight away; check with him before starting each phase after that.
 It's C# on .NET 10 with WPF, for Windows 10 and 11, x64. It ships on GitHub Releases as an installer and a portable
 exe, not on the Microsoft Store. [README.md](README.md) is the user guide.
@@ -68,6 +69,7 @@ setting, which points Check for Updates elsewhere.
 | Window snapping | `Snapping/WindowSnapper` (shortcuts and status), `Snapping/WindowMover` (moves windows on a thread of its own), `Snapping/Displays`, and in Core `SnapLayout` (pure geometry) |
 | Screenshot tool | `Snipping/ScreenSnipper` (Win+Alt+P, then the menu's choices), `Snipping/SnipOverlay` (the screen picker), `Snipping/SnipOffer` (the menu after a snip), `Snipping/SnipEditorWindow` (the editors), `Snipping/SnipCanvas` and `Snipping/SnipSidebar` (the editor's snip and tools), `Snipping/SnipRenderer` (shapes, drawn the same on the canvas and in what's copied or saved), `Snipping/SnipOutput` (clipboard and PNG files), `Snipping/TextRecognizer` (Copy Text), `Snipping/ScreenCapture`, `Ui/Toast`, and in Core `Snipping/SnipEditorModel` (the editor's logic, step for step as on the Mac), `Annotation`, `SnipLayout` and `Blur` |
 | GIF recording | `Recording/ScreenRecorder` (Win+Alt+G, through the screen picker, then the menu's choices), `Recording/GifRecording` (takes the pictures and writes the GIF, on threads of their own), `Recording/RecordingControls` (the red line and Stop), and in Core `Recording/GifWriter` (the GIF, frame by frame, as on the Mac) and `RecordingLayout` |
+| Keyboard cleaning | `Cleaning/KeyboardCleaner` (asks, then runs the session: window, countdown, Caps Lock), `Cleaning/InputBlocker` (the keyboard and mouse hooks, on a thread of their own, which also ends cleaning), `Cleaning/CleaningWindow`, `Cleaning/CapsLock`, and in Core `Cleaning/CleaningSession` (when it ends) and `CleaningKeys` (what's held back, both Shift keys) |
 | Shared | `Shortcuts` (every global shortcut, through a keyboard hook), `Interop/MessageWindow` (the hidden window that hears the tray, other copies and Windows), `Interop/Native`, `OpenAtLogin`, `Updater`, and in Core `Settings` and `Release` (the update feed) |
 | Checks | `SelfTest`, `tests/JaredsWindowsUtils.Tests`, `scripts/try-on-windows.ps1` |
 
@@ -88,6 +90,16 @@ Windows APIs) with xUnit tests, so it's tested on any machine.
   key (0xE8) while Win and Alt are down: Win pressed and let go on its own opens Start, and Alt on its own opens the
   menu bar of the window in front. The self-test checks both with Notepad. The hook doesn't hear keys pressed in apps run
   as administrator.
+- **Keyboard cleaning holds everything back with two more hooks,** `WH_KEYBOARD_LL` and `WH_MOUSE_LL` (a touchpad moves
+  the pointer as a mouse does), on a thread of their own that never waits on anything. That thread, not the UI thread,
+  ends it: at the deadline, on both Shift keys, and when the UI thread hasn't called `Beat` for 4 seconds, which is the
+  Mac event tap's "a hung app gives input back" (Windows would only skip a slow hook, and may then take it out without a
+  word). The hook lets by the letting go of a key or button that was already down when it began, which Windows would
+  otherwise think was held for good, and the app's own Caps Lock press (`CapsLock.Mine`). Caps Lock is read with
+  `GetKeyState` from the cleaning window, once it has the focus, and put back at the end and whenever it differs. A
+  touchscreen's touches, and perhaps a precision touchpad's gestures, can reach Windows before any hook: untried on real
+  hardware, since GitHub's machines have no touchpad. The self-test puts a hook of its own in first, so it hears what the
+  cleaning hooks let by.
 - **The hidden window is a real top-level window,** not a message-only one, so that shutdown and the installer's Restart
   Manager can ask the app to close. It handles `WM_CLOSE` and `WM_ENDSESSION` by quitting properly, which removes the
   tray icon.

@@ -1,7 +1,7 @@
 # Roadmap
 
 The Windows app gets the Mac app's features one at a time, a release each, so each can be tried on a real Windows PC
-before the next one starts. This is Jared's plan from November 2, 2026, with GIFs moved up on November 9. Tick items off here as they ship.
+before the next one starts. This is Jared's plan from November 2, 2026, with GIFs moved up on November 9 and keyboard cleaning on November 12. Tick items off here as they ship.
 
 | Release | Feature | Status |
 |---|---|---|
@@ -9,8 +9,8 @@ before the next one starts. This is Jared's plan from November 2, 2026, with GIF
 | 0.2.0 | [Screenshot tool](#020-screenshot-tool), without GIFs | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.2.0) November 2, 2026 |
 | 0.3.0 | [Record GIFs](#030-record-gifs) with the screenshot tool | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.3.0) November 9, 2026 |
 | 0.4.0 | [Temperature](#040-temperature) | [Released](https://github.com/jfreema/Jareds-Cool-Windows-Utils-App/releases/tag/v0.4.0) November 10, 2026, and removed in 0.4.4 on November 11 |
-| 0.5.0 | [Stay awake with the lid closed](#050-stay-awake-with-the-lid-closed) | Not started |
-| 0.6.0 | [Keyboard cleaning](#060-keyboard-cleaning) | Not started |
+| 0.5.0 | [Keyboard cleaning](#050-keyboard-cleaning) | Built November 12, 2026, to be tried |
+| 0.6.0 | [Stay awake with the lid closed](#060-stay-awake-with-the-lid-closed) | Not started |
 | 0.7.0 | [Guitar tuner](#070-guitar-tuner) | Not started |
 | 0.8.0 | [Drum machine](#080-drum-machine) | Not started |
 
@@ -98,19 +98,32 @@ doesn't share one says so.
       kernel driver, and 0.4.0 froze his PC. The Settings and log fixes stay. See
       [AGENTS.md](../AGENTS.md#things-that-bite) before ever asking hardware for a temperature again.
 
-## 0.5.0: Stay awake with the lid closed
+## 0.5.0: Keyboard cleaning
+
+Jared asked for it on November 12, 2026, ahead of the lid, so it took 0.5.0 and the lid moved to 0.6.0. As on the Mac,
+with a **Clean Keyboard** button under **Tools** in the menu. It has no shortcut.
+
+- [x] Turns off the keyboard and touchpad for 5 minutes while you wipe them, after asking first. Every keyboard,
+      touchpad and mouse is off, external ones too; Ctrl+Alt+Delete still works
+- [x] A window in the middle of the screen counts down, with how to turn them back on sooner
+- [x] Holding both Shift keys for 1.5 seconds turns them back on early (the Mac's both Command keys: some laptops have a
+      Copilot key where the right Ctrl key was, and few have a right Windows key)
+- [x] Caps Lock stays as it was
+- [x] The hooks come out by themselves if the app stops answering for a few seconds, as the Mac's event tap does, so a
+      stuck app can't hold the keyboard
+- [x] The self-test turns it on, checks that keys, clicks and the pointer are held back and let by again afterwards,
+      that Caps Lock is put back, and that both Shift keys, the time running out and a stuck app each end it
+- [x] Released
+- [ ] Tried on Jared's Windows PC, with a touchpad and a laptop keyboard (GitHub's machines have neither): touchpad
+      gestures, like three-finger swipes, may reach Windows before any hook, and a touchscreen isn't held back
+
+## 0.6.0: Stay awake with the lid closed
 
 Keeps a laptop running with its lid shut.
 
 - [ ] Stay Awake with Lid Closed, with Plugged In Only, Online Only and a low power option
 - [ ] What it's doing now in the menu, and in the tray icon's tooltip
 - [ ] Puts Windows' own lid setting back if the app quits or crashes
-- [ ] Released and tried
-
-## 0.6.0: Keyboard cleaning
-
-- [ ] Turns off the keyboard and touchpad for a few minutes while you wipe them, with a countdown window
-- [ ] Caps Lock stays as it was
 - [ ] Released and tried
 
 ## 0.7.0: Guitar tuner

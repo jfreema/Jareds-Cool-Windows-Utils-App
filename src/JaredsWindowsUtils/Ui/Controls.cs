@@ -14,6 +14,8 @@ enum GlyphKind
     Bolt, CheckCircle, Circle, Warning, Check,
     // The snip editor's tools and buttons
     Box, Line, Arrow, Highlighter, Drop, Letters, Eraser, Undo, Redo,
+    // The menu's tools
+    Sparkles, Keyboard,
 }
 
 static class Glyphs
@@ -102,6 +104,23 @@ static class Glyphs
                 context.Pop();
                 context.DrawLine(Pen(brush, s * 0.09), P(0.36, 0.9), P(0.9, 0.9));
                 break;
+            case GlyphKind.Sparkles:
+                // A big four-pointed star and two small ones, as SF Symbols' sparkles
+                context.DrawGeometry(brush, Pen(brush, s * 0.04), Star(P, 0.42, 0.58, 0.4));
+                context.DrawGeometry(brush, Pen(brush, s * 0.03), Star(P, 0.8, 0.2, 0.18));
+                context.DrawGeometry(brush, Pen(brush, s * 0.03), Star(P, 0.82, 0.8, 0.13));
+                break;
+            case GlyphKind.Keyboard:
+                context.DrawRoundedRectangle(null, Pen(brush, s * 0.09), new Rect(P(0.06, 0.22), P(0.94, 0.78)), s * 0.1,
+                    s * 0.1);
+                for (int column = 0; column < 4; column++)
+                {
+                    context.DrawRectangle(brush, null, new Rect(P(0.2 + column * 0.17, 0.35), new Size(s * 0.09, s * 0.08)));
+                    if (column < 3)
+                        context.DrawRectangle(brush, null, new Rect(P(0.285 + column * 0.17, 0.5), new Size(s * 0.09, s * 0.08)));
+                }
+                context.DrawRectangle(brush, null, new Rect(P(0.3, 0.64), new Size(s * 0.4, s * 0.07)));
+                break;
             case GlyphKind.Undo or GlyphKind.Redo:
                 // Mirrored for Redo
                 Point M(double u, double v) => kind == GlyphKind.Undo ? P(u, v) : P(1 - u, v);
@@ -114,6 +133,15 @@ static class Glyphs
                 context.DrawGeometry(null, Pen(brush, s * 0.12), Polyline(M(0.4, 0.18), M(0.24, 0.34), M(0.4, 0.5)));
                 break;
         }
+    }
+
+    /// <summary>A four-pointed star with concave sides, around a center, in box units</summary>
+    static Geometry Star(Func<double, double, Point> P, double cx, double cy, double radius)
+    {
+        double waist = radius * 0.24;
+        var geometry = Polygon(P(cx, cy - radius), P(cx + waist, cy - waist), P(cx + radius, cy), P(cx + waist, cy + waist),
+            P(cx, cy + radius), P(cx - waist, cy + waist), P(cx - radius, cy), P(cx - waist, cy - waist));
+        return geometry;
     }
 
     /// <summary>A drop: a circle low in the box, drawn up to a point at the top</summary>
@@ -390,6 +418,35 @@ sealed class ChipToggle : BubbleButton
 
     protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() =>
         new System.Windows.Automation.Peers.ButtonAutomationPeer(this);
+}
+
+/// <summary>A wide button for a tool, with its symbol on a colored chip, like the Mac menu's tiles</summary>
+sealed class ToolTile : BubbleButton
+{
+    const double ChipSide = 22;
+
+    readonly GlyphKind kind;
+    readonly Brush chip;
+
+    public ToolTile(string title, GlyphKind kind, Brush chip) : base(title)
+    {
+        this.kind = kind;
+        this.chip = chip;
+        PillHeight = 36;
+        TextSize = 13;
+    }
+
+    protected override double LeadingWidth => ChipSide + 8;
+
+    protected override double LeadingSize => ChipSide;
+
+    protected override void DrawLeading(DrawingContext context, Rect box)
+    {
+        Bubble.DrawCard(context, box, chip, 6, 0);
+        double glyph = ChipSide * 0.6;
+        Glyphs.Draw(context, kind, new Rect(box.X + (box.Width - glyph) / 2, box.Y + (box.Height - glyph) / 2, glyph,
+            glyph), Bubble.Ink, chip);
+    }
 }
 
 /// <summary>A switch like the battle plan app's: an outlined track with a square knob that shows a check when on</summary>

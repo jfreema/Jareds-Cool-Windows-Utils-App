@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using JaredsWindowsUtils.Cleaning;
 using JaredsWindowsUtils.Core;
 using JaredsWindowsUtils.Interop;
 using JaredsWindowsUtils.Snapping;
@@ -23,6 +24,7 @@ sealed class App : Application
     Shortcuts shortcuts = null!;
     WindowSnapper snapper = null!;
     ScreenSnipper snipper = null!;
+    KeyboardCleaner cleaner = null!;
     Updater updater = null!;
     MenuWindow? menu;
     /// <summary>When the menu last closed, by Environment.TickCount64</summary>
@@ -38,6 +40,7 @@ sealed class App : Application
 
     internal WindowSnapper Snapper => snapper;
     internal ScreenSnipper Snipper => snipper;
+    internal KeyboardCleaner Cleaner => cleaner;
     internal TrayIcon Tray => tray;
     internal MenuWindow? Menu => menu;
     protected override void OnStartup(StartupEventArgs e)
@@ -60,6 +63,7 @@ sealed class App : Application
         snipper = new ScreenSnipper(settings, shortcuts);
         snipper.Changed += RefreshMenu;
         snipper.Start();
+        cleaner = new KeyboardCleaner(Dispatcher);
         updater = new Updater(settings, Quit, ReadyToQuit);
         updater.BusyChanged += RefreshMenu;
         tray = new TrayIcon(messages);
@@ -224,6 +228,9 @@ sealed class App : Application
     {
         switch (command)
         {
+            case MenuCommand.CleanKeyboard:
+                cleaner.Start();
+                break;
             case MenuCommand.ShowAbout:
                 AboutWindow.ShowSingle();
                 break;
@@ -258,6 +265,7 @@ sealed class App : Application
         try
         {
             menu?.Dismiss();
+            cleaner.Dispose();
             tray.Dispose();
             snipper.Dispose();
             snapper.Dispose();
@@ -280,6 +288,7 @@ sealed class App : Application
         if (!hasQuit)
         {
             hasQuit = true;
+            cleaner.Dispose();
             tray.Dispose();
             snipper.Dispose();
             snapper.Dispose();

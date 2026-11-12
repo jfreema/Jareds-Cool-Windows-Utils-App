@@ -12,7 +12,7 @@ namespace JaredsWindowsUtils.Ui;
 enum MenuToggle { OpenAtLogin, SnapWindows, SnapThirds, SnipScreen, RecordGifs }
 
 /// <summary>What a button in the menu does</summary>
-enum MenuCommand { ShowAbout, CheckForUpdates, Quit }
+enum MenuCommand { CleanKeyboard, ShowAbout, CheckForUpdates, Quit }
 
 /// <summary>What the menu shows</summary>
 /// <param name="SnapNote">Why the shortcuts didn't take, under the switch</param>
@@ -48,6 +48,10 @@ sealed class MenuWindow : Window
     };
     readonly Strip snipNote;
     readonly TextBlock snipNoteText;
+    readonly ToolTile cleanKeyboard = new("Clean Keyboard", GlyphKind.Sparkles, Bubble.Orange)
+    {
+        ToolTip = "Turns off the keyboard and touchpad for 5 minutes, so you can wipe them",
+    };
     readonly BubbleButton checkForUpdates = new("Check for Updates");
     RECT anchor;
     bool closing;
@@ -82,6 +86,7 @@ sealed class MenuWindow : Window
         content.Children.Add(Header());
         content.Children.Add(Section("Window Snapping", Card(snapWindows, SnapOptions(), snapNote)));
         content.Children.Add(Section("Screenshots", Card(snipScreen, Options(recordGifs), snipNote), spaceAbove: true));
+        content.Children.Add(Section("Tools", Tools(), spaceAbove: true));
         content.Children.Add(Footer());
 
         Content = new MenuSurface
@@ -273,6 +278,14 @@ sealed class MenuWindow : Window
         note.Children.Add(warning);
         note.Children.Add(text);
         return (new Strip { Child = note, Visibility = Visibility.Collapsed }, text);
+    }
+
+    FrameworkElement Tools()
+    {
+        System.Windows.Automation.AutomationProperties.SetName(cleanKeyboard, "Clean Keyboard and Touchpad");
+        cleanKeyboard.Click += (_, _) => Command?.Invoke(MenuCommand.CleanKeyboard);
+        cleanKeyboard.Margin = new Thickness(0, 0, 2, 3);
+        return cleanKeyboard;
     }
 
     FrameworkElement SnapOptions() => Options(snapThirds);
